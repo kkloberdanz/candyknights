@@ -29,13 +29,16 @@
 enum {
     SCREEN_WIDTH = 800,
     SCREEN_HEIGHT = 600,
+    MAX_VELOCITY = 20,
+    MIN_VELOCITY = 10,
+    WINNING_SCORE = 10
 };
 
 enum Direction {
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT
+    UP = 1,
+    DOWN = 2,
+    LEFT = 4,
+    RIGHT = 8
 };
 
 char *direction_str[] = {
@@ -56,6 +59,33 @@ struct Entity {
     SDL_Rect rect;
     SDL_Texture *texture;
 };
+
+int rand_ball_velocity() {
+    int random_num = rand() % MAX_VELOCITY;
+    int velocity = MAX(random_num, MIN_VELOCITY);
+    return velocity;
+}
+
+bool obj_touching(SDL_Rect *rect1, SDL_Rect *rect2) {
+    return !(rect1->x >= rect2->x + rect2->w) &&
+           !(rect1->y >= rect2->y + rect2->h) &&
+           !(rect2->x >= rect1->x + rect1->w) &&
+           !(rect2->y >= rect1->y + rect1->h);
+}
+
+bool obj_in_bounds(SDL_Rect *rect) {
+    if (rect->x > SCREEN_WIDTH) {
+        return false;
+    } else if (rect->x < 0) {
+        return false;
+    } else if (rect->y > SCREEN_HEIGHT) {
+        return false;
+    } else if (rect->y < 0) {
+        return false;
+    } else {
+        return true;
+    }
+}
 
 char *get_button_str(enum Button button) {
     switch (button) {
@@ -84,25 +114,26 @@ int get_button(SDL_Joystick *joystick) {
 
 int get_direction(SDL_Joystick *joystick) {
     int num_axes = SDL_JoystickNumAxes(joystick);
+    int direction = 0;
     for (int i = 0; i < num_axes; i++) {
         int axis = SDL_JoystickGetAxis(joystick, i);
         if (axis) {
             if (i == 1) {
                 if (axis < 0) {
-                    return UP;
+                    direction |= UP;
                 } else {
-                    return DOWN;
+                    direction |= DOWN;
                 }
             } else if (i == 0) {
                 if (axis < 0) {
-                    return LEFT;
+                    direction |= LEFT;
                 } else {
-                    return RIGHT;
+                    direction |= RIGHT;
                 }
             }
         }
     }
-    return -1;
+    return direction;
 }
 
 SDL_Surface *load_image(char *filename, SDL_Surface *screen) {
@@ -154,6 +185,20 @@ int main(void) {
     };
     SDL_Renderer *renderer;
     SDL_Window *window;
+    int num_joysticks = SDL_NumJoysticks();
+    printf("found %d joysticks\n", num_joysticks);
+    for (int i = 0; i < num_joysticks; ++i) {
+        if (SDL_IsGameController(i)) {
+            printf("Joystick %i is supported!\n", i);
+        }
+    }
+
+    SDL_Joystick *joystick = NULL;
+    if (num_joysticks) {
+        joystick = SDL_JoystickOpen(0);
+    } else {
+        exit(EXIT_FAILURE);
+    }
 
     /* create window and renderer */
     SDL_CreateWindowAndRenderer(
@@ -184,77 +229,64 @@ int main(void) {
         .texture = load_texture("assets/cake.png", screen_surface, renderer)
     };
 
-    int y_vel = 10;
     int x_vel = 10;
-    int size_factor = 1;
+    int y_vel = 10;
+    int grow_rate = 10;
     while (game_running()) {
+
+        int dir = get_direction(joystick);
+        if (dir) {
+            if (dir & DOWN) {
+                if (cake.rect.y < SCREEN_HEIGHT) {
+                    cake.rect.y += y_vel;
+                }
+            }
+            if (dir & UP) {
+                if (cake.rect.y > 0) {
+                    cake.rect.y -= y_vel;
+                }
+            }
+            if (dir & RIGHT) {
+                if (cake.rect.x < SCREEN_WIDTH) {
+                    cake.rect.x += x_vel;
+                }
+            }
+            if (dir & LEFT) {
+                if (cake.rect.x > 0) {
+                    cake.rect.x -= x_vel;
+                }
+            }
+        }
+
+        int button = get_button(joystick);
+        switch (button) {
+            case A:
+                if (cake.rect.w < SCREEN_WIDTH) {
+                    cake.rect.w += grow_rate;
+                    cake.rect.h += grow_rate;
+                }
+                break;
+            case B:
+                if (cake.rect.w > 0) {
+                    cake.rect.w -= grow_rate;
+                    cake.rect.h -= grow_rate;
+                }
+                break;
+            case START:
+                goto exit_gameloop;
+            default:
+                break;
+        }
+
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, background_image, NULL, NULL);
         SDL_RenderCopy(renderer, cake.texture, NULL, &cake.rect);
         SDL_RenderPresent(renderer);
-        cake.rect.x += x_vel;
-        if (cake.rect.x > SCREEN_WIDTH || cake.rect.x <= 0) {
-            x_vel = x_vel * -1;
-        }
-        cake.rect.y += y_vel;
-        if (cake.rect.y > SCREEN_HEIGHT || cake.rect.y <= 0) {
-            y_vel = y_vel * -1;
-        }
-
-        cake.rect.w += size_factor;
-        cake.rect.h += size_factor;
-
-        if (cake.rect.w > SCREEN_WIDTH) {
-            size_factor = -1;
-        } else if (cake.rect.w < 10) {
-            size_factor = 1;
-        }
 
         SDL_Delay(20);
     }
+exit_gameloop:
 
-#if 0
-
-    int num_joysticks = SDL_NumJoysticks();
-    printf("found %d joysticks\n", num_joysticks);
-    for (int i = 0; i < num_joysticks; ++i) {
-        if (SDL_IsGameController(i)) {
-            printf("Joystick %i is supported!\n", i);
-        }
-    }
-
-    SDL_Joystick *joystick = NULL;
-    if (num_joysticks) {
-        joystick = SDL_JoystickOpen(0);
-    } else {
-        goto quit;
-    }
-
-    int num_buttons = SDL_JoystickNumButtons(joystick);
-    int num_hats = SDL_JoystickNumHats(joystick);
-    printf("num buttons: %d\n", num_buttons);
-    printf("num hats: %d\n", num_hats);
-    printf("num axis: %d\n", SDL_JoystickNumAxes(joystick));
-    printf("num balls: %d\n", SDL_JoystickNumBalls(joystick));
-
-    while (game_running()) {
-        int button = get_button(joystick);
-        if (button >= 0) {
-            printf("button: %s\n", get_button_str(button));
-        }
-
-        int dir = get_direction(joystick);
-        if (dir >= 0) {
-            printf("direction: %s\n", direction_str[dir]);
-        }
-
-        SDL_Flip(backbuffer);
-        SDL_Delay(20);
-    }
-
-    SDL_JoystickClose(joystick);
-quit:
-#endif
     puts("destroy window");
     SDL_DestroyWindow(window);
     puts("shutting down sdl");
