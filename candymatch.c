@@ -260,7 +260,7 @@ int main(void) {
             }
         }
 
-        int button = get_button(joystick);
+        char button = get_button(joystick);
         switch (button) {
             case A:
                 if (cake.rect.w < SCREEN_WIDTH) {
