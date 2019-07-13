@@ -100,8 +100,27 @@ int get_direction(SDL_Joystick *joystick) {
     return -1;
 }
 
-SDL_Surface *load_image(char *filename) {
-    return IMG_Load(filename);
+SDL_Surface *load_image(char *filename, SDL_Surface *screen) {
+    SDL_Surface *surface = IMG_Load(filename);
+    SDL_Surface *optimized_surface = NULL;
+
+    if (surface == NULL) {
+        fprintf(stderr, "unable to load image: %s\n", filename);
+    } else {
+        optimized_surface = SDL_ConvertSurface(surface, screen->format, 0);
+        SDL_FreeSurface(surface);
+    }
+    return optimized_surface;
+}
+
+SDL_Texture *load_texture(
+    char *filename,
+    SDL_Surface *screen,
+    SDL_Renderer *renderer
+) {
+    SDL_Surface *image = load_image(filename, screen);
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, image);
+    return texture;
 }
 
 bool game_running() {
@@ -147,14 +166,24 @@ int main(void) {
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 
-    SDL_Surface *candy = load_image("assets/cake.png");
+    SDL_Surface *candy = load_image("assets/cake.png", screen_surface);
+
+    SDL_Rect stretch_rect = {
+        .x = 0,
+        .y = 0,
+        .w = SCREEN_WIDTH,
+        .h = SCREEN_HEIGHT
+    };
+
     if (candy == NULL) {
         fprintf(stderr, "failed to load candy\n");
         exit(EXIT_FAILURE);
     }
     while (game_running()) {
-        SDL_BlitSurface(candy, NULL, screen_surface, NULL);
+        SDL_BlitScaled(candy, NULL, screen_surface, &stretch_rect);
         SDL_UpdateWindowSurface(window);
+        stretch_rect.w--;
+        stretch_rect.h--;
         SDL_Delay(20);
     }
 
