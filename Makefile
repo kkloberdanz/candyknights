@@ -1,6 +1,6 @@
-CFLAGS=-std=iso9899:1990
+CFLAGS=-std=c99
 WARN_FLAGS=-Wall -Wextra -Wpedantic -Werror
-CLANG=clang -Wassign-enum -Wenum-conversion
+LFLAGS=-lSDL2 -lSDL2_image
 SANITIZE=-fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined
 
 OBJS=candymatch
@@ -14,10 +14,15 @@ debug: run
 valgrind: OPTIM_FLAGS=-Og -ggdb -DDEBUG
 valgrind: run
 
-CC=$(CLANG)
+CLANG=clang -Wassign-enum -Wenum-conversion
+CC=$(CLANG) $(OPTIM_FLAGS) $(CFLAGS) $(WARN_FLAGS) $(LFLAGS)
 
 run: $(OBJS)
 	./candymatch
 
 candymatch:
 	$(CC) -o candymatch candymatch.c -lSDL2
+
+clean:
+	rm -f candymatch
+	rm -f core

@@ -19,8 +19,17 @@
  * File: candymatch.c
  */
 
-#include <SDL2/SDL.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
+
+#define MAX(A, B) (((A) > (B)) ? (A) : (B))
+
+enum {
+    SCREEN_WIDTH = 800,
+    SCREEN_HEIGHT = 600,
+};
 
 enum Direction {
     UP,
@@ -92,21 +101,7 @@ int get_direction(SDL_Joystick *joystick) {
 }
 
 SDL_Surface *load_image(char *filename) {
-    SDL_Surface *image_loaded = NULL;
-    SDL_Surface *processed_image = NULL;
-
-    image_loaded = SDL_LoadBMP(filename);
-
-    if (image_loaded != NULL) {
-        processed_image = SDL_DisplayFormat(image_loaded);
-        SDL_FreeSurface(image_loaded);
-
-        if (processed_image != NULL) {
-            int color_key = SDL_MapRGB(processed_image->format, 0xFF, 0, 0xFF);
-            SDL_SetColorKey(processed_image, SDL_SRCCOLORKEY, color_key);
-        }
-    }
-    return processed_image;
+    return IMG_Load(filename);
 }
 
 bool game_running() {
@@ -126,6 +121,45 @@ bool game_running() {
 int main(void) {
     /* initialize */
     SDL_Init(SDL_INIT_EVERYTHING);
+    if ((IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG) == 0) {
+        fprintf(stderr, "failed to initialize image library\n");
+        exit(EXIT_FAILURE);
+    };
+    SDL_Renderer *renderer;
+    SDL_Window *window;
+
+    /* create window and renderer */
+    SDL_CreateWindowAndRenderer(
+        0,
+        0,
+        SDL_WINDOW_FULLSCREEN,
+        &window,
+        &renderer
+    );
+
+    if (SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT) < 0) {
+        fprintf(stderr, "failed to set resolution: %s\n", SDL_GetError());
+    }
+
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
+
+    SDL_Surface *screen_surface = SDL_GetWindowSurface(window);
+
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+
+    SDL_Surface *candy = load_image("assets/cake.png");
+    if (candy == NULL) {
+        fprintf(stderr, "failed to load candy\n");
+        exit(EXIT_FAILURE);
+    }
+    while (game_running()) {
+        SDL_BlitSurface(candy, NULL, screen_surface, NULL);
+        SDL_UpdateWindowSurface(window);
+        SDL_Delay(20);
+    }
+
+#if 0
+
     int num_joysticks = SDL_NumJoysticks();
     printf("found %d joysticks\n", num_joysticks);
     for (int i = 0; i < num_joysticks; ++i) {
@@ -158,11 +192,18 @@ int main(void) {
         if (dir >= 0) {
             printf("direction: %s\n", direction_str[dir]);
         }
+
+        SDL_Flip(backbuffer);
         SDL_Delay(20);
     }
 
-close_joystick:
     SDL_JoystickClose(joystick);
 quit:
+#endif
+    puts("destroy window");
+    SDL_DestroyWindow(window);
+    puts("shutting down sdl");
     SDL_Quit();
+    puts("done");
+    return 0;
 }
