@@ -112,9 +112,9 @@ int get_button(SDL_Joystick *joystick) {
     return -1;
 }
 
-int get_direction(SDL_Joystick *joystick) {
+char get_direction(SDL_Joystick *joystick) {
     int num_axes = SDL_JoystickNumAxes(joystick);
-    int direction = 0;
+    char direction = 0;
     for (int i = 0; i < num_axes; i++) {
         int axis = SDL_JoystickGetAxis(joystick, i);
         if (axis) {
@@ -217,27 +217,29 @@ int main(void) {
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
+
     SDL_Texture *background_image = load_texture("assets/background.png", screen_surface, renderer);
 
     struct Entity cake = {
         .rect = {
             .x = 0,
             .y = 0,
-            .w = 32,
-            .h = 32
+            .w = 22,
+            .h = 22
         },
-        .texture = load_texture("assets/cake.png", screen_surface, renderer)
+        .texture = load_texture("assets/cake3.png", screen_surface, renderer)
     };
 
     int x_vel = 10;
     int y_vel = 10;
-    int grow_rate = 10;
+    int grow_rate = 2;
     while (game_running()) {
-
-        int dir = get_direction(joystick);
+        int start_tick = SDL_GetTicks();
+        char dir = get_direction(joystick);
         if (dir) {
             if (dir & DOWN) {
-                if (cake.rect.y < SCREEN_HEIGHT) {
+                if (cake.rect.y < SCREEN_HEIGHT - cake.rect.h) {
                     cake.rect.y += y_vel;
                 }
             }
@@ -247,7 +249,7 @@ int main(void) {
                 }
             }
             if (dir & RIGHT) {
-                if (cake.rect.x < SCREEN_WIDTH) {
+                if (cake.rect.x < SCREEN_WIDTH - cake.rect.w) {
                     cake.rect.x += x_vel;
                 }
             }
@@ -283,7 +285,7 @@ int main(void) {
         SDL_RenderCopy(renderer, cake.texture, NULL, &cake.rect);
         SDL_RenderPresent(renderer);
 
-        SDL_Delay(20);
+        SDL_Delay(20 - (start_tick - SDL_GetTicks()));
     }
 exit_gameloop:
 
