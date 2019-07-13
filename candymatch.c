@@ -52,6 +52,11 @@ enum Button {
     SELECT = 8
 };
 
+struct Entity {
+    SDL_Rect rect;
+    SDL_Texture *texture;
+};
+
 char *get_button_str(enum Button button) {
     switch (button) {
         case B:
@@ -107,6 +112,8 @@ SDL_Surface *load_image(char *filename, SDL_Surface *screen) {
     if (surface == NULL) {
         fprintf(stderr, "unable to load image: %s\n", filename);
     } else {
+        int color_key = SDL_MapRGB(surface->format, 0x00, 0x00, 0x00);
+        SDL_SetColorKey(surface, SDL_TRUE, color_key);
         optimized_surface = SDL_ConvertSurface(surface, screen->format, 0);
         SDL_FreeSurface(surface);
     }
@@ -120,6 +127,7 @@ SDL_Texture *load_texture(
 ) {
     SDL_Surface *image = load_image(filename, screen);
     SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, image);
+    SDL_FreeSurface(image);
     return texture;
 }
 
@@ -160,30 +168,48 @@ int main(void) {
         fprintf(stderr, "failed to set resolution: %s\n", SDL_GetError());
     }
 
-    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-
     SDL_Surface *screen_surface = SDL_GetWindowSurface(window);
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 
-    SDL_Surface *candy = load_image("assets/cake.png", screen_surface);
+    SDL_Texture *background_image = load_texture("assets/background.png", screen_surface, renderer);
 
-    SDL_Rect stretch_rect = {
-        .x = 0,
-        .y = 0,
-        .w = SCREEN_WIDTH,
-        .h = SCREEN_HEIGHT
+    struct Entity cake = {
+        .rect = {
+            .x = 0,
+            .y = 0,
+            .w = 32,
+            .h = 32
+        },
+        .texture = load_texture("assets/cake.png", screen_surface, renderer)
     };
 
-    if (candy == NULL) {
-        fprintf(stderr, "failed to load candy\n");
-        exit(EXIT_FAILURE);
-    }
+    int y_vel = 10;
+    int x_vel = 10;
+    int size_factor = 1;
     while (game_running()) {
-        SDL_BlitScaled(candy, NULL, screen_surface, &stretch_rect);
-        SDL_UpdateWindowSurface(window);
-        stretch_rect.w--;
-        stretch_rect.h--;
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, background_image, NULL, NULL);
+        SDL_RenderCopy(renderer, cake.texture, NULL, &cake.rect);
+        SDL_RenderPresent(renderer);
+        cake.rect.x += x_vel;
+        if (cake.rect.x > SCREEN_WIDTH || cake.rect.x <= 0) {
+            x_vel = x_vel * -1;
+        }
+        cake.rect.y += y_vel;
+        if (cake.rect.y > SCREEN_HEIGHT || cake.rect.y <= 0) {
+            y_vel = y_vel * -1;
+        }
+
+        cake.rect.w += size_factor;
+        cake.rect.h += size_factor;
+
+        if (cake.rect.w > SCREEN_WIDTH) {
+            size_factor = -1;
+        } else if (cake.rect.w < 10) {
+            size_factor = 1;
+        }
+
         SDL_Delay(20);
     }
 
