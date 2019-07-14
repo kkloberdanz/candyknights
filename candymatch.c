@@ -41,13 +41,6 @@ enum Direction {
     RIGHT = 8
 };
 
-char *direction_str[] = {
-    "UP",
-    "DOWN",
-    "LEFT",
-    "RIGHT"
-};
-
 enum Button {
     B = 0,
     A = 1,
@@ -58,6 +51,12 @@ enum Button {
 struct Entity {
     SDL_Rect rect;
     SDL_Texture *texture;
+};
+
+struct Character {
+    struct Entity entity;
+    int x_vel;
+    int y_vel;
 };
 
 int rand_ball_velocity() {
@@ -221,19 +220,28 @@ int main(void) {
 
     SDL_Texture *background_image = load_texture("assets/background.png", screen_surface, renderer);
 
+    /* populate cake textures */
+    SDL_Texture *cake_textures[13];
+    char file_str[255];
+    for (int i = 0; i < 13; i++) {
+        sprintf(file_str, "assets/cake_eaten%d.png", i);
+        cake_textures[i] = load_texture(file_str, screen_surface, renderer);
+    }
+
     struct Entity cake = {
         .rect = {
             .x = 0,
             .y = 0,
-            .w = 22,
-            .h = 22
+            .w = 22 * 4,
+            .h = 22 * 4
         },
-        .texture = load_texture("assets/cake3.png", screen_surface, renderer)
+        .texture = cake_textures[0]
     };
 
     int x_vel = 10;
     int y_vel = 10;
-    int grow_rate = 2;
+    //int grow_rate = 2;
+    int cake_frame = 1;
     while (game_running()) {
         int start_tick = SDL_GetTicks();
         char dir = get_direction(joystick);
@@ -263,16 +271,21 @@ int main(void) {
         char button = get_button(joystick);
         switch (button) {
             case A:
+                /*
                 if (cake.rect.w < SCREEN_WIDTH) {
                     cake.rect.w += grow_rate;
                     cake.rect.h += grow_rate;
                 }
+                */
+                cake.texture = cake_textures[cake_frame++ % 13];
                 break;
             case B:
+                /*
                 if (cake.rect.w > 0) {
                     cake.rect.w -= grow_rate;
                     cake.rect.h -= grow_rate;
                 }
+                */
                 break;
             case START:
                 goto exit_gameloop;
