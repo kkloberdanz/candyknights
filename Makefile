@@ -11,17 +11,18 @@ release: run
 debug: OPTIM_FLAGS=-Og -ggdb -DDEBUG $(SANITIZE)
 debug: run
 
-valgrind: OPTIM_FLAGS=-Og -ggdb -DDEBUG
+valgrind: OPTIM_FLAGS=-Og -ggdb3 -DDEBUG
+valgrind: OTHER_RUNTIME=valgrind --leak-check=full
 valgrind: run
 
 CFLAGS=$(OPTIM_FLAGS) $(WARN_FLAGS) $(LFLAGS)
 CLANG=clang -Wassign-enum -Wenum-conversion
 GCC=gcc
 
-CC=$(CLANG)
+CC=$(GCC)
 
 run: $(OBJS)
-	./candymatch
+	$(OTHER_RUNTIME) ./candymatch
 
 candymatch:
 	$(CC) -o candymatch candymatch.c $(CFLAGS)

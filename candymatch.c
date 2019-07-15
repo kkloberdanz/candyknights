@@ -50,7 +50,9 @@ enum Button {
 
 struct Entity {
     SDL_Rect rect;
-    SDL_Texture *texture;
+    SDL_Texture **textures;
+    int current_texture;
+    int num_textures;
 };
 
 struct Character {
@@ -175,6 +177,29 @@ bool game_running() {
     return true;
 }
 
+SDL_Texture **get_textures(
+    char *filename_format,
+    int num_textures,
+    SDL_Surface *screen_surface,
+    SDL_Renderer *renderer
+) {
+    SDL_Texture **textures = malloc(sizeof(SDL_Texture *) * (num_textures + 2));
+    char file_str[255];
+    for (int i = 0; i <= num_textures; i++) {
+        snprintf(file_str, 255, filename_format, i);
+        textures[i] = load_texture(file_str, screen_surface, renderer);
+    }
+    textures[num_textures + 1] = NULL;
+    return textures;
+}
+
+void free_textures(SDL_Texture **textures) {
+    for (int i = 0; textures[i] != NULL; i++) {
+        SDL_DestroyTexture(textures[i]);
+    }
+    free(textures);
+}
+
 int main(void) {
     /* initialize */
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -220,14 +245,6 @@ int main(void) {
 
     SDL_Texture *background_image = load_texture("assets/background.png", screen_surface, renderer);
 
-    /* populate cake textures */
-    SDL_Texture *cake_textures[13];
-    char file_str[255];
-    for (int i = 0; i < 13; i++) {
-        sprintf(file_str, "assets/cake_eaten%d.png", i);
-        cake_textures[i] = load_texture(file_str, screen_surface, renderer);
-    }
-
     struct Entity cake = {
         .rect = {
             .x = 0,
@@ -235,13 +252,21 @@ int main(void) {
             .w = 22 * 4,
             .h = 22 * 4
         },
-        .texture = cake_textures[0]
+        .textures = get_textures(
+            "assets/cake_eaten%d.png",
+            12,
+            screen_surface,
+            renderer
+        ),
+        .current_texture = 0,
+        .num_textures = 12
     };
 
     int x_vel = 10;
     int y_vel = 10;
+    unsigned int button_debounce = 150;
+    unsigned int last_button_press = 0;
     //int grow_rate = 2;
-    int cake_frame = 1;
     while (game_running()) {
         int start_tick = SDL_GetTicks();
         char dir = get_direction(joystick);
@@ -269,42 +294,52 @@ int main(void) {
         }
 
         char button = get_button(joystick);
-        switch (button) {
-            case A:
-                /*
-                if (cake.rect.w < SCREEN_WIDTH) {
-                    cake.rect.w += grow_rate;
-                    cake.rect.h += grow_rate;
-                }
-                */
-                cake.texture = cake_textures[cake_frame++ % 13];
-                break;
-            case B:
-                /*
-                if (cake.rect.w > 0) {
-                    cake.rect.w -= grow_rate;
-                    cake.rect.h -= grow_rate;
-                }
-                */
-                break;
-            case START:
-                goto exit_gameloop;
-            default:
-                break;
+        if ((SDL_GetTicks() - last_button_press) > button_debounce) {
+            switch (button) {
+                case A:
+                    /*
+                    if (cake.rect.w < SCREEN_WIDTH) {
+                        cake.rect.w += grow_rate;
+                        cake.rect.h += grow_rate;
+                    }
+                    */
+                    cake.current_texture = (cake.current_texture + 1) % 13;
+                    last_button_press = SDL_GetTicks();
+                    break;
+                case B:
+                    /*
+                    if (cake.rect.w > 0) {
+                        cake.rect.w -= grow_rate;
+                        cake.rect.h -= grow_rate;
+                    }
+                    */
+                    last_button_press = SDL_GetTicks();
+                    break;
+                case START:
+                    last_button_press = SDL_GetTicks();
+                    goto exit_gameloop;
+                default:
+                    break;
+            }
         }
 
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, background_image, NULL, NULL);
-        SDL_RenderCopy(renderer, cake.texture, NULL, &cake.rect);
+        SDL_RenderCopy(renderer, cake.textures[cake.current_texture], NULL, &cake.rect);
         SDL_RenderPresent(renderer);
 
         SDL_Delay(20 - (start_tick - SDL_GetTicks()));
     }
 exit_gameloop:
 
+    SDL_DestroyTexture(background_image);
+    free_textures(cake.textures);
     puts("destroy window");
     SDL_DestroyWindow(window);
     puts("shutting down sdl");
+    SDL_JoystickClose(joystick);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
     SDL_Quit();
     puts("done");
     return 0;
