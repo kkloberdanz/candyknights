@@ -50,15 +50,17 @@ enum Button {
 
 struct Entity {
     SDL_Rect rect;
-    SDL_Texture **textures;
-    int current_texture;
-    int num_textures;
+    SDL_Texture *texture;
+    int num_frames;
 };
 
 struct Character {
     struct Entity entity;
     int x_vel;
     int y_vel;
+    int sprite_height;
+    int sprite_width;
+    int num_sprites;
 };
 
 int rand_ball_velocity() {
@@ -177,29 +179,6 @@ bool game_running() {
     return true;
 }
 
-SDL_Texture **get_textures(
-    char *filename_format,
-    int num_textures,
-    SDL_Surface *screen_surface,
-    SDL_Renderer *renderer
-) {
-    SDL_Texture **textures = malloc(sizeof(SDL_Texture *) * (num_textures + 2));
-    char file_str[255];
-    for (int i = 0; i <= num_textures; i++) {
-        snprintf(file_str, 255, filename_format, i);
-        textures[i] = load_texture(file_str, screen_surface, renderer);
-    }
-    textures[num_textures + 1] = NULL;
-    return textures;
-}
-
-void free_textures(SDL_Texture **textures) {
-    for (int i = 0; textures[i] != NULL; i++) {
-        SDL_DestroyTexture(textures[i]);
-    }
-    free(textures);
-}
-
 int main(void) {
     /* initialize */
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -236,15 +215,18 @@ int main(void) {
     if (SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT) < 0) {
         fprintf(stderr, "failed to set resolution: %s\n", SDL_GetError());
     }
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_TRANSPARENT);
 
-    SDL_Surface *screen_surface = SDL_GetWindowSurface(window);
+    SDL_Surface *screen = SDL_GetWindowSurface(window);
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 
-    SDL_Texture *background_image = load_texture("assets/background.png", screen_surface, renderer);
+    SDL_Texture *background_image = load_texture("assets/background.png", screen, renderer);
 
+    /*
     struct Entity cake = {
         .rect = {
             .x = 0,
@@ -255,13 +237,27 @@ int main(void) {
         .textures = get_textures(
             "assets/cake_eaten%d.png",
             12,
-            screen_surface,
+            screen,
             renderer
         ),
         .current_texture = 0,
         .num_textures = 12
     };
+    */
 
+    struct Entity knight = {
+        .rect = {
+            .x = 0,
+            .y = 0,
+            .w = 64,
+            .h = 64
+        },
+        .texture = load_texture("assets/knight.png", screen, renderer),
+        .num_frames = 10
+    };
+
+    SDL_SetTextureBlendMode(knight.texture, SDL_BLENDMODE_BLEND);
+    //SDL_SetTextureAlphaMod(knight.texture, 100);
     int x_vel = 10;
     int y_vel = 10;
     unsigned int button_debounce = 150;
@@ -272,23 +268,23 @@ int main(void) {
         char dir = get_direction(joystick);
         if (dir) {
             if (dir & DOWN) {
-                if (cake.rect.y < SCREEN_HEIGHT - cake.rect.h) {
-                    cake.rect.y += y_vel;
+                if (knight.rect.y < SCREEN_HEIGHT - knight.rect.h) {
+                    knight.rect.y += y_vel;
                 }
             }
             if (dir & UP) {
-                if (cake.rect.y > 0) {
-                    cake.rect.y -= y_vel;
+                if (knight.rect.y > 0) {
+                    knight.rect.y -= y_vel;
                 }
             }
             if (dir & RIGHT) {
-                if (cake.rect.x < SCREEN_WIDTH - cake.rect.w) {
-                    cake.rect.x += x_vel;
+                if (knight.rect.x < SCREEN_WIDTH - knight.rect.w) {
+                    knight.rect.x += x_vel;
                 }
             }
             if (dir & LEFT) {
-                if (cake.rect.x > 0) {
-                    cake.rect.x -= x_vel;
+                if (knight.rect.x > 0) {
+                    knight.rect.x -= x_vel;
                 }
             }
         }
@@ -303,7 +299,6 @@ int main(void) {
                         cake.rect.h += grow_rate;
                     }
                     */
-                    cake.current_texture = (cake.current_texture + 1) % 13;
                     last_button_press = SDL_GetTicks();
                     break;
                 case B:
@@ -325,7 +320,7 @@ int main(void) {
 
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, background_image, NULL, NULL);
-        SDL_RenderCopy(renderer, cake.textures[cake.current_texture], NULL, &cake.rect);
+        SDL_RenderCopy(renderer, knight.texture, &knight.rect, NULL);
         SDL_RenderPresent(renderer);
 
         SDL_Delay(20 - (start_tick - SDL_GetTicks()));
@@ -333,13 +328,13 @@ int main(void) {
 exit_gameloop:
 
     SDL_DestroyTexture(background_image);
-    free_textures(cake.textures);
     puts("destroy window");
     SDL_DestroyWindow(window);
     puts("shutting down sdl");
     SDL_JoystickClose(joystick);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    IMG_Quit();
     SDL_Quit();
     puts("done");
     return 0;
