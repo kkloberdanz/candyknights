@@ -89,6 +89,7 @@ struct Entity {
     int x_vel;
     int y_vel;
     enum EntityState state;
+    char buffer;
 };
 
 int rand_ball_velocity() {
@@ -213,6 +214,20 @@ void set_frame(struct Entity *entity, enum SpriteFrame frame_num) {
     entity->texture_rect.x = entity->current_frame * entity->texture_rect.w;
 }
 
+void walk_animation(struct Entity *entity) {
+    if (entity->buffer <= 5) {
+        entity->buffer++;
+        set_frame(entity, WALKING_1);
+    } else if (entity->buffer <= 10) {
+        entity->buffer++;
+        set_frame(entity, WALKING_2);
+    } else {
+        set_frame(entity, STANDING);
+        entity->state = IDLE;
+        entity->buffer = 0;
+    }
+}
+
 int main(void) {
     /* initialize */
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -281,7 +296,8 @@ int main(void) {
         },
         .x_vel = 10,
         .y_vel = 10,
-        .state = IDLE
+        .state = IDLE,
+        .buffer = 0
     };
 
     unsigned int button_debounce = 150;
@@ -346,14 +362,7 @@ int main(void) {
                 if (knight.rect.x < SCREEN_WIDTH - knight.rect.w) {
                     knight.rect.x += knight.x_vel;
                     knight.flip = SDL_FLIP_NONE;
-
-                    if (entity_buffer <= 5) {
-                        entity_buffer++;
-                        set_frame(&knight, WALKING_1);
-                    } else {
-                        entity_buffer = 0;
-                        set_frame(&knight, WALKING_2);
-                    }
+                    walk_animation(&knight);
                 }
                 knight.state = IDLE;
                 break;
@@ -362,7 +371,7 @@ int main(void) {
                 if (knight.rect.x > 0) {
                     knight.rect.x -= knight.x_vel;
                     knight.flip = SDL_FLIP_HORIZONTAL;
-                    set_frame(&knight, 1);
+                    walk_animation(&knight);
                 }
                 knight.state = IDLE;
                 break;
@@ -370,6 +379,7 @@ int main(void) {
             case WALKING_UP:
                 if (knight.rect.y > 0) {
                     knight.rect.y -= knight.y_vel;
+                    walk_animation(&knight);
                 }
                 knight.state = IDLE;
                 break;
@@ -377,6 +387,7 @@ int main(void) {
             case WALKING_DOWN:
                 if (knight.rect.y < SCREEN_HEIGHT - knight.rect.h) {
                     knight.rect.y += knight.y_vel;
+                    walk_animation(&knight);
                 }
                 knight.state = IDLE;
                 break;
