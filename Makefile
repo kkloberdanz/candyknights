@@ -19,7 +19,7 @@ CFLAGS=$(OPTIM_FLAGS) $(WARN_FLAGS) $(LFLAGS)
 CLANG=clang -Wassign-enum -Wenum-conversion
 GCC=gcc
 
-CC=$(GCC)
+CC=$(CLANG)
 
 run: $(OBJS)
 	$(OTHER_RUNTIME) ./candymatch

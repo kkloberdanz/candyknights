@@ -50,10 +50,7 @@ enum SpriteFrame {
 
 enum EntityState {
     IDLE,
-    WALKING_LEFT,
-    WALKING_RIGHT,
-    WALKING_UP,
-    WALKING_DOWN,
+    WALKING,
     ATTACKING
 };
 
@@ -302,25 +299,13 @@ int main(void) {
 
     unsigned int button_debounce = 150;
     unsigned int last_button_press = 0;
-    int entity_buffer = 0;
     while (game_running()) {
         int start_tick = SDL_GetTicks();
 
         /* scan buttons */
         char dir = get_direction(joystick);
         if (dir) {
-            if (dir & DOWN) {
-                knight.state = WALKING_DOWN;
-            }
-            if (dir & UP) {
-                knight.state = WALKING_UP;
-            }
-            if (dir & RIGHT) {
-                knight.state = WALKING_RIGHT;
-            }
-            if (dir & LEFT) {
-                knight.state = WALKING_LEFT;
-            }
+            knight.state = WALKING;
         } else {
             char button = get_button(joystick);
             if ((SDL_GetTicks() - last_button_press) > button_debounce) {
@@ -343,49 +328,45 @@ int main(void) {
         /* do game logic */
         switch (knight.state) {
             case ATTACKING:
-                if (entity_buffer <= 5) {
-                    entity_buffer++;
+                if (knight.buffer <= 5) {
+                    knight.buffer++;
                     set_frame(&knight, ATTACKING_1);
-                } else if (entity_buffer <= 12) {
-                    entity_buffer++;
+                } else if (knight.buffer <= 12) {
+                    knight.buffer++;
                     set_frame(&knight, ATTACKING_2);
                 } else {
                     set_frame(&knight, STANDING);
                     knight.state = IDLE;
-                    entity_buffer = 0;
+                    knight.buffer = 0;
                 }
                 break;
 
-            case WALKING_RIGHT:
-                if (knight.rect.x < SCREEN_WIDTH - knight.rect.w) {
-                    knight.rect.x += knight.x_vel;
-                    knight.flip = SDL_FLIP_NONE;
-                    walk_animation(&knight);
+            case WALKING:
+                if (dir & DOWN) {
+                    if (knight.rect.y < SCREEN_HEIGHT - knight.rect.h) {
+                        knight.rect.y += knight.y_vel;
+                        walk_animation(&knight);
+                    }
                 }
-                knight.state = IDLE;
-                break;
-
-            case WALKING_LEFT:
-                if (knight.rect.x > 0) {
-                    knight.rect.x -= knight.x_vel;
-                    knight.flip = SDL_FLIP_HORIZONTAL;
-                    walk_animation(&knight);
+                if (dir & UP) {
+                    if (knight.rect.y > 0) {
+                        knight.rect.y -= knight.y_vel;
+                        walk_animation(&knight);
+                    }
                 }
-                knight.state = IDLE;
-                break;
-
-            case WALKING_UP:
-                if (knight.rect.y > 0) {
-                    knight.rect.y -= knight.y_vel;
-                    walk_animation(&knight);
+                if (dir & RIGHT) {
+                    if (knight.rect.x < SCREEN_WIDTH - knight.rect.w) {
+                        knight.rect.x += knight.x_vel;
+                        knight.flip = SDL_FLIP_NONE;
+                        walk_animation(&knight);
+                    }
                 }
-                knight.state = IDLE;
-                break;
-
-            case WALKING_DOWN:
-                if (knight.rect.y < SCREEN_HEIGHT - knight.rect.h) {
-                    knight.rect.y += knight.y_vel;
-                    walk_animation(&knight);
+                if (dir & LEFT) {
+                    if (knight.rect.x > 0) {
+                        knight.rect.x -= knight.x_vel;
+                        knight.flip = SDL_FLIP_HORIZONTAL;
+                        walk_animation(&knight);
+                    }
                 }
                 knight.state = IDLE;
                 break;
