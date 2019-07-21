@@ -62,6 +62,8 @@ struct Entity {
     SDL_Rect texture_rect;
     int total_frames;
     int current_frame;
+    SDL_RendererFlip flip;
+    SDL_Point center;
 };
 
 struct Character {
@@ -231,7 +233,9 @@ int main(void) {
 
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 
-    SDL_Texture *background_image = load_texture("assets/background.png", renderer);
+    SDL_Texture *background_image = load_texture(
+        "assets/background.png",
+        renderer);
 
     struct Entity knight = {
         .rect = {
@@ -248,7 +252,12 @@ int main(void) {
             .h = 64
         },
         .total_frames = 10,
-        .current_frame = 0
+        .current_frame = 0,
+        .flip = SDL_FLIP_NONE,
+        .center = {
+            .x = 64,
+            .y = 64
+        }
     };
 
     int x_vel = 10;
@@ -272,11 +281,13 @@ int main(void) {
             if (dir & RIGHT) {
                 if (knight.rect.x < SCREEN_WIDTH - knight.rect.w) {
                     knight.rect.x += x_vel;
+                    knight.flip = SDL_FLIP_NONE;
                 }
             }
             if (dir & LEFT) {
                 if (knight.rect.x > 0) {
                     knight.rect.x -= x_vel;
+                    knight.flip = SDL_FLIP_HORIZONTAL;
                 }
             }
         }
@@ -309,11 +320,15 @@ int main(void) {
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, background_image, NULL, NULL);
 
-        SDL_RenderCopy(
+        SDL_RenderCopyEx(
             renderer,
             knight.texture,
             &knight.texture_rect,
-            &knight.rect);
+            &knight.rect,
+            0.0, // angle
+            &knight.center, // center
+            knight.flip
+        );
 
         SDL_RenderPresent(renderer);
 
