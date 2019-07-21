@@ -35,6 +35,13 @@ enum Constants {
     WINNING_SCORE = 10
 };
 
+enum EntityState {
+    IDLE,
+    WALKING_LEFT,
+    WALKING_RIGHT,
+    ATTACKING
+};
+
 enum Direction {
     UP = 1,
     DOWN = 2,
@@ -64,15 +71,9 @@ struct Entity {
     int current_frame;
     SDL_RendererFlip flip;
     SDL_Point center;
-};
-
-struct Character {
-    struct Entity entity;
     int x_vel;
     int y_vel;
-    int sprite_height;
-    int sprite_width;
-    int num_sprites;
+    enum EntityState state;
 };
 
 int rand_ball_velocity() {
@@ -192,6 +193,11 @@ bool game_running() {
     return true;
 }
 
+void set_frame(struct Entity *entity, int frame_num) {
+    entity->current_frame = frame_num;
+    entity->texture_rect.x = entity->current_frame * entity->texture_rect.w;
+}
+
 int main(void) {
     /* initialize */
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -257,39 +263,46 @@ int main(void) {
         .center = {
             .x = 64,
             .y = 64
-        }
+        },
+        .x_vel = 10,
+        .y_vel = 10,
+        .state = IDLE
     };
 
-    int x_vel = 10;
-    int y_vel = 10;
     unsigned int button_debounce = 150;
     unsigned int last_button_press = 0;
+    int attack_frame = 8;
+    int attack_buffer = 0;
     while (game_running()) {
         int start_tick = SDL_GetTicks();
         char dir = get_direction(joystick);
         if (dir) {
             if (dir & DOWN) {
                 if (knight.rect.y < SCREEN_HEIGHT - knight.rect.h) {
-                    knight.rect.y += y_vel;
+                    knight.rect.y += knight.y_vel;
                 }
             }
             if (dir & UP) {
                 if (knight.rect.y > 0) {
-                    knight.rect.y -= y_vel;
+                    knight.rect.y -= knight.y_vel;
                 }
             }
             if (dir & RIGHT) {
                 if (knight.rect.x < SCREEN_WIDTH - knight.rect.w) {
-                    knight.rect.x += x_vel;
+                    knight.rect.x += knight.x_vel;
                     knight.flip = SDL_FLIP_NONE;
+                    set_frame(&knight, 1);
                 }
             }
             if (dir & LEFT) {
                 if (knight.rect.x > 0) {
-                    knight.rect.x -= x_vel;
+                    knight.rect.x -= knight.x_vel;
                     knight.flip = SDL_FLIP_HORIZONTAL;
+                    set_frame(&knight, 1);
                 }
             }
+        } else if (knight.state == IDLE) {
+            set_frame(&knight, 0);
         }
 
         char button = get_button(joystick);
@@ -298,14 +311,16 @@ int main(void) {
                 if (button & A) {
                     last_button_press = SDL_GetTicks();
 
-                    knight.current_frame = (knight.current_frame + 1) \
+                    /*
+                    int current_frame = (knight.current_frame + 1) \
                         % knight.total_frames;
 
-                    knight.texture_rect.x = \
-                        knight.current_frame * knight.texture_rect.w;
+                    set_frame(&knight, current_frame);
+                    */
 
                     printf("frame: %d\n", knight.current_frame);
                     printf("x: %d\n", knight.texture_rect.x);
+                    knight.state = ATTACKING;
                 }
                 if (button & B) {
                     last_button_press = SDL_GetTicks();
@@ -315,6 +330,24 @@ int main(void) {
                     goto exit_gameloop;
                 }
             }
+        }
+
+        switch (knight.state) {
+            case ATTACKING:
+                if (attack_frame > 9) {
+                    attack_frame = 8;
+                    knight.state = IDLE;
+                } else if (attack_buffer > 6) {
+                    attack_frame++;
+                    attack_buffer = 0;
+                }  else {
+                    attack_buffer++;
+                    set_frame(&knight, attack_frame);
+                }
+                break;
+
+            default:
+                break;
         }
 
         SDL_RenderClear(renderer);
