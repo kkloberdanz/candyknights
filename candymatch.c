@@ -21,6 +21,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <math.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
@@ -51,7 +52,9 @@ enum Button {
 struct Entity {
     SDL_Rect rect;
     SDL_Texture *texture;
-    int num_frames;
+    SDL_Rect texture_rect;
+    int total_frames;
+    int current_frame;
 };
 
 struct Character {
@@ -226,25 +229,6 @@ int main(void) {
 
     SDL_Texture *background_image = load_texture("assets/background.png", screen, renderer);
 
-    /*
-    struct Entity cake = {
-        .rect = {
-            .x = 0,
-            .y = 0,
-            .w = 22 * 4,
-            .h = 22 * 4
-        },
-        .textures = get_textures(
-            "assets/cake_eaten%d.png",
-            12,
-            screen,
-            renderer
-        ),
-        .current_texture = 0,
-        .num_textures = 12
-    };
-    */
-
     struct Entity knight = {
         .rect = {
             .x = 0,
@@ -253,16 +237,20 @@ int main(void) {
             .h = 64
         },
         .texture = load_texture("assets/knight.png", screen, renderer),
-        .num_frames = 10
+        .texture_rect = {
+            .x = 0,
+            .y = 0,
+            .w = 64,
+            .h = 64
+        },
+        .total_frames = 10,
+        .current_frame = 0
     };
 
-    SDL_SetTextureBlendMode(knight.texture, SDL_BLENDMODE_BLEND);
-    //SDL_SetTextureAlphaMod(knight.texture, 100);
     int x_vel = 10;
     int y_vel = 10;
     unsigned int button_debounce = 150;
     unsigned int last_button_press = 0;
-    //int grow_rate = 2;
     while (game_running()) {
         int start_tick = SDL_GetTicks();
         char dir = get_direction(joystick);
@@ -293,21 +281,18 @@ int main(void) {
         if ((SDL_GetTicks() - last_button_press) > button_debounce) {
             switch (button) {
                 case A:
-                    /*
-                    if (cake.rect.w < SCREEN_WIDTH) {
-                        cake.rect.w += grow_rate;
-                        cake.rect.h += grow_rate;
-                    }
-                    */
                     last_button_press = SDL_GetTicks();
+
+                    knight.current_frame = (knight.current_frame + 1) \
+                        % knight.total_frames;
+
+                    knight.texture_rect.x = \
+                        knight.current_frame * knight.rect.w;
+
+                    printf("frame: %d\n", knight.current_frame);
+                    printf("x: %d\n", knight.texture_rect.x);
                     break;
                 case B:
-                    /*
-                    if (cake.rect.w > 0) {
-                        cake.rect.w -= grow_rate;
-                        cake.rect.h -= grow_rate;
-                    }
-                    */
                     last_button_press = SDL_GetTicks();
                     break;
                 case START:
@@ -320,7 +305,7 @@ int main(void) {
 
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, background_image, NULL, NULL);
-        SDL_RenderCopy(renderer, knight.texture, &knight.rect, NULL);
+        SDL_RenderCopy(renderer, knight.texture, &knight.texture_rect, &knight.rect);
         SDL_RenderPresent(renderer);
 
         SDL_Delay(20 - (start_tick - SDL_GetTicks()));

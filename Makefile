@@ -1,6 +1,6 @@
 STDFLAG=-std=c99
 WARN_FLAGS=-Wall -Wextra -Wpedantic -Werror
-LFLAGS=-lSDL2 -lSDL2_image
+LFLAGS=-lSDL2 -lSDL2_image -lm
 SANITIZE=-fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined
 
 OBJS=candymatch
