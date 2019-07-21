@@ -35,10 +35,25 @@ enum Constants {
     WINNING_SCORE = 10
 };
 
+enum SpriteFrame {
+    STANDING,
+    WALKING_1,
+    WALKING_2,
+    BLINK_1,
+    BLINK_2,
+    BLINK_3,
+    LOOK_DOWN,
+    LOOK_UP,
+    ATTACKING_1,
+    ATTACKING_2
+};
+
 enum EntityState {
     IDLE,
     WALKING_LEFT,
     WALKING_RIGHT,
+    WALKING_UP,
+    WALKING_DOWN,
     ATTACKING
 };
 
@@ -118,7 +133,7 @@ char *get_button_str(enum Button button) {
     }
 }
 
-enum Button translate_controller_button(int button_num) {
+int translate_controller_button(int button_num) {
     switch (button_num) {
         case CTRL_A:
             return A;
@@ -193,7 +208,7 @@ bool game_running() {
     return true;
 }
 
-void set_frame(struct Entity *entity, int frame_num) {
+void set_frame(struct Entity *entity, enum SpriteFrame frame_num) {
     entity->current_frame = frame_num;
     entity->texture_rect.x = entity->current_frame * entity->texture_rect.w;
 }
@@ -271,35 +286,24 @@ int main(void) {
 
     unsigned int button_debounce = 150;
     unsigned int last_button_press = 0;
-    int attack_frame = 8;
-    int attack_buffer = 0;
+    int entity_buffer = 0;
     while (game_running()) {
         int start_tick = SDL_GetTicks();
+
+        /* scan buttons */
         char dir = get_direction(joystick);
         if (dir) {
             if (dir & DOWN) {
-                if (knight.rect.y < SCREEN_HEIGHT - knight.rect.h) {
-                    knight.rect.y += knight.y_vel;
-                }
+                knight.state = WALKING_DOWN;
             }
             if (dir & UP) {
-                if (knight.rect.y > 0) {
-                    knight.rect.y -= knight.y_vel;
-                }
+                knight.state = WALKING_UP;
             }
             if (dir & RIGHT) {
-                if (knight.rect.x < SCREEN_WIDTH - knight.rect.w) {
-                    knight.rect.x += knight.x_vel;
-                    knight.flip = SDL_FLIP_NONE;
-                    set_frame(&knight, 1);
-                }
+                knight.state = WALKING_RIGHT;
             }
             if (dir & LEFT) {
-                if (knight.rect.x > 0) {
-                    knight.rect.x -= knight.x_vel;
-                    knight.flip = SDL_FLIP_HORIZONTAL;
-                    set_frame(&knight, 1);
-                }
+                knight.state = WALKING_LEFT;
             }
         } else if (knight.state == IDLE) {
             set_frame(&knight, 0);
@@ -310,16 +314,6 @@ int main(void) {
             if (button) {
                 if (button & A) {
                     last_button_press = SDL_GetTicks();
-
-                    /*
-                    int current_frame = (knight.current_frame + 1) \
-                        % knight.total_frames;
-
-                    set_frame(&knight, current_frame);
-                    */
-
-                    printf("frame: %d\n", knight.current_frame);
-                    printf("x: %d\n", knight.texture_rect.x);
                     knight.state = ATTACKING;
                 }
                 if (button & B) {
@@ -332,21 +326,63 @@ int main(void) {
             }
         }
 
+        /* do game logic */
         switch (knight.state) {
             case ATTACKING:
-                if (attack_frame > 9) {
-                    attack_frame = 8;
+                if (entity_buffer <= 5) {
+                    entity_buffer++;
+                    set_frame(&knight, ATTACKING_1);
+                } else if (entity_buffer <= 12) {
+                    entity_buffer++;
+                    set_frame(&knight, ATTACKING_2);
+                } else {
+                    set_frame(&knight, STANDING);
                     knight.state = IDLE;
-                } else if (attack_buffer > 6) {
-                    attack_frame++;
-                    attack_buffer = 0;
-                }  else {
-                    attack_buffer++;
-                    set_frame(&knight, attack_frame);
+                    entity_buffer = 0;
                 }
                 break;
 
-            default:
+            case WALKING_RIGHT:
+                if (knight.rect.x < SCREEN_WIDTH - knight.rect.w) {
+                    knight.rect.x += knight.x_vel;
+                    knight.flip = SDL_FLIP_NONE;
+
+                    if (entity_buffer <= 5) {
+                        entity_buffer++;
+                        set_frame(&knight, WALKING_1);
+                    } else {
+                        entity_buffer = 0;
+                        set_frame(&knight, WALKING_2);
+                    }
+                }
+                knight.state = IDLE;
+                break;
+
+            case WALKING_LEFT:
+                if (knight.rect.x > 0) {
+                    knight.rect.x -= knight.x_vel;
+                    knight.flip = SDL_FLIP_HORIZONTAL;
+                    set_frame(&knight, 1);
+                }
+                knight.state = IDLE;
+                break;
+
+            case WALKING_UP:
+                if (knight.rect.y > 0) {
+                    knight.rect.y -= knight.y_vel;
+                }
+                knight.state = IDLE;
+                break;
+
+            case WALKING_DOWN:
+                if (knight.rect.y < SCREEN_HEIGHT - knight.rect.h) {
+                    knight.rect.y += knight.y_vel;
+                }
+                knight.state = IDLE;
+                break;
+
+            case IDLE:
+                // TODO
                 break;
         }
 
