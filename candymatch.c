@@ -142,29 +142,14 @@ char get_direction(SDL_Joystick *joystick) {
     return direction;
 }
 
-SDL_Surface *load_image(char *filename, SDL_Surface *screen) {
-    SDL_Surface *surface = IMG_Load(filename);
-    SDL_Surface *optimized_surface = NULL;
-
-    if (surface == NULL) {
-        fprintf(stderr, "unable to load image: %s\n", filename);
-    } else {
-        int color_key = SDL_MapRGB(surface->format, 0x00, 0x00, 0x00);
-        SDL_SetColorKey(surface, SDL_TRUE, color_key);
-        optimized_surface = SDL_ConvertSurface(surface, screen->format, 0);
-        SDL_FreeSurface(surface);
-    }
-    return optimized_surface;
-}
-
 SDL_Texture *load_texture(
     char *filename,
-    SDL_Surface *screen,
     SDL_Renderer *renderer
 ) {
-    SDL_Surface *image = load_image(filename, screen);
-    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, image);
-    SDL_FreeSurface(image);
+    SDL_Texture *texture = IMG_LoadTexture(renderer, filename);
+    if (texture == NULL) {
+        fprintf(stderr, "failed to load texture: '%s'\n", filename);
+    }
     return texture;
 }
 
@@ -221,13 +206,13 @@ int main(void) {
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_TRANSPARENT);
 
-    SDL_Surface *screen = SDL_GetWindowSurface(window);
+    //SDL_Surface *screen = SDL_GetWindowSurface(window);
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 
-    SDL_Texture *background_image = load_texture("assets/background.png", screen, renderer);
+    SDL_Texture *background_image = load_texture("assets/background.png", renderer);
 
     struct Entity knight = {
         .rect = {
@@ -236,7 +221,7 @@ int main(void) {
             .w = 64,
             .h = 64
         },
-        .texture = load_texture("assets/knight.png", screen, renderer),
+        .texture = load_texture("assets/knight.png", renderer),
         .texture_rect = {
             .x = 0,
             .y = 0,
