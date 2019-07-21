@@ -321,23 +321,21 @@ int main(void) {
             if (dir & LEFT) {
                 knight.state = WALKING_LEFT;
             }
-        } else if (knight.state == IDLE) {
-            set_frame(&knight, 0);
-        }
-
-        char button = get_button(joystick);
-        if ((SDL_GetTicks() - last_button_press) > button_debounce) {
-            if (button) {
-                if (button & A) {
-                    last_button_press = SDL_GetTicks();
-                    knight.state = ATTACKING;
-                }
-                if (button & B) {
-                    last_button_press = SDL_GetTicks();
-                }
-                if (button & START) {
-                    last_button_press = SDL_GetTicks();
-                    goto exit_gameloop;
+        } else {
+            char button = get_button(joystick);
+            if ((SDL_GetTicks() - last_button_press) > button_debounce) {
+                if (button) {
+                    if (button & A) {
+                        last_button_press = SDL_GetTicks();
+                        knight.state = ATTACKING;
+                    }
+                    if (button & B) {
+                        last_button_press = SDL_GetTicks();
+                    }
+                    if (button & START) {
+                        last_button_press = SDL_GetTicks();
+                        goto exit_gameloop;
+                    }
                 }
             }
         }
@@ -393,7 +391,7 @@ int main(void) {
                 break;
 
             case IDLE:
-                // TODO
+                set_frame(&knight, STANDING);
                 break;
         }
 
