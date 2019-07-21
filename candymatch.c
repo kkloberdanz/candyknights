@@ -27,7 +27,7 @@
 
 #define MAX(A, B) (((A) > (B)) ? (A) : (B))
 
-enum {
+enum Constants {
     SCREEN_WIDTH = 800,
     SCREEN_HEIGHT = 600,
     MAX_VELOCITY = 20,
@@ -168,10 +168,7 @@ char get_direction(SDL_Joystick *joystick) {
     return direction;
 }
 
-SDL_Texture *load_texture(
-    char *filename,
-    SDL_Renderer *renderer
-) {
+SDL_Texture *load_texture(char *filename, SDL_Renderer *renderer) {
     SDL_Texture *texture = IMG_LoadTexture(renderer, filename);
     if (texture == NULL) {
         fprintf(stderr, "failed to load texture: '%s'\n", filename);
@@ -229,10 +226,6 @@ int main(void) {
     if (SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT) < 0) {
         fprintf(stderr, "failed to set resolution: %s\n", SDL_GetError());
     }
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_TRANSPARENT);
-
-    //SDL_Surface *screen = SDL_GetWindowSurface(window);
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 
@@ -244,8 +237,8 @@ int main(void) {
         .rect = {
             .x = 0,
             .y = 0,
-            .w = 64,
-            .h = 64
+            .w = 128,
+            .h = 128
         },
         .texture = load_texture("assets/knight.png", renderer),
         .texture_rect = {
@@ -298,7 +291,7 @@ int main(void) {
                         % knight.total_frames;
 
                     knight.texture_rect.x = \
-                        knight.current_frame * knight.rect.w;
+                        knight.current_frame * knight.texture_rect.w;
 
                     printf("frame: %d\n", knight.current_frame);
                     printf("x: %d\n", knight.texture_rect.x);
@@ -315,13 +308,19 @@ int main(void) {
 
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, background_image, NULL, NULL);
-        SDL_RenderCopy(renderer, knight.texture, &knight.texture_rect, &knight.rect);
+
+        SDL_RenderCopy(
+            renderer,
+            knight.texture,
+            &knight.texture_rect,
+            &knight.rect);
+
         SDL_RenderPresent(renderer);
 
         SDL_Delay(20 - (start_tick - SDL_GetTicks()));
     }
-exit_gameloop:
 
+exit_gameloop:
     SDL_DestroyTexture(background_image);
     puts("destroy window");
     SDL_DestroyWindow(window);
