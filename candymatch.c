@@ -42,10 +42,17 @@ enum Direction {
     RIGHT = 8
 };
 
+enum ControllerButton {
+    CTRL_A = 1,
+    CTRL_B = 0,
+    CTRL_START = 9,
+    CTRL_SELECT = 8
+};
+
 enum Button {
-    B = 0,
     A = 1,
-    START = 9,
+    B = 2,
+    START = 4,
     SELECT = 8
 };
 
@@ -108,14 +115,33 @@ char *get_button_str(enum Button button) {
     }
 }
 
-int get_button(SDL_Joystick *joystick) {
+enum Button translate_controller_button(int button_num) {
+    switch (button_num) {
+        case CTRL_A:
+            return A;
+        case CTRL_B:
+            return B;
+        case CTRL_START:
+            return START;
+        case CTRL_SELECT:
+            return SELECT;
+        default:
+            return -1;
+    }
+}
+
+char get_button(SDL_Joystick *joystick) {
     int num_buttons = SDL_JoystickNumButtons(joystick);
+    char button = 0;
     for (int i = 0; i < num_buttons; i++) {
         if (SDL_JoystickGetButton(joystick, i)) {
-            return i;
+            int button_pressed = translate_controller_button(i);
+            if (button_pressed != -1) {
+                button |= button_pressed;
+            }
         }
     }
-    return -1;
+    return button;
 }
 
 char get_direction(SDL_Joystick *joystick) {
@@ -264,8 +290,8 @@ int main(void) {
 
         char button = get_button(joystick);
         if ((SDL_GetTicks() - last_button_press) > button_debounce) {
-            switch (button) {
-                case A:
+            if (button) {
+                if (button & A) {
                     last_button_press = SDL_GetTicks();
 
                     knight.current_frame = (knight.current_frame + 1) \
@@ -276,15 +302,14 @@ int main(void) {
 
                     printf("frame: %d\n", knight.current_frame);
                     printf("x: %d\n", knight.texture_rect.x);
-                    break;
-                case B:
+                }
+                if (button & B) {
                     last_button_press = SDL_GetTicks();
-                    break;
-                case START:
+                }
+                if (button & START) {
                     last_button_press = SDL_GetTicks();
                     goto exit_gameloop;
-                default:
-                    break;
+                }
             }
         }
 

@@ -24,6 +24,9 @@ CC=$(GCC)
 run: $(OBJS)
 	$(OTHER_RUNTIME) ./candymatch
 
+strip: $(OBJS)
+	strip candymatch
+
 candymatch:
 	$(CC) -o candymatch candymatch.c $(CFLAGS)
 
