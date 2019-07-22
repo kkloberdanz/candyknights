@@ -75,6 +75,12 @@ enum Button {
     SELECT = 8
 };
 
+enum IdleState {
+    BLINKING,
+    LOOK_AROUND,
+    STILL
+};
+
 struct Entity {
     SDL_Rect rect;
     SDL_Texture *texture;
@@ -86,7 +92,8 @@ struct Entity {
     int x_vel;
     int y_vel;
     enum EntityState state;
-    char buffer;
+    unsigned char buffer;
+    enum IdleState idle_state;
 };
 
 int rand_ball_velocity() {
@@ -212,10 +219,10 @@ void set_frame(struct Entity *entity, enum SpriteFrame frame_num) {
 }
 
 void walk_animation(struct Entity *entity) {
-    if (entity->buffer <= 5) {
+    if (entity->buffer <= 7) {
         entity->buffer++;
         set_frame(entity, WALKING_1);
-    } else if (entity->buffer <= 10) {
+    } else if (entity->buffer <= 14) {
         entity->buffer++;
         set_frame(entity, WALKING_2);
     } else {
@@ -223,6 +230,10 @@ void walk_animation(struct Entity *entity) {
         entity->state = IDLE;
         entity->buffer = 0;
     }
+}
+
+enum IdleState get_rand_idle_state() {
+    return rand() % STILL;
 }
 
 int main(void) {
@@ -294,7 +305,8 @@ int main(void) {
         .x_vel = 10,
         .y_vel = 10,
         .state = IDLE,
-        .buffer = 0
+        .buffer = 0,
+        .idle_state = STILL
     };
 
     unsigned int button_debounce = 150;
@@ -312,7 +324,10 @@ int main(void) {
                 if (button) {
                     if (button & A) {
                         last_button_press = SDL_GetTicks();
-                        knight.state = ATTACKING;
+                        if (knight.state != ATTACKING) {
+                            knight.buffer = 0;
+                            knight.state = ATTACKING;
+                        }
                     }
                     if (button & B) {
                         last_button_press = SDL_GetTicks();
@@ -372,7 +387,54 @@ int main(void) {
                 break;
 
             case IDLE:
-                set_frame(&knight, STANDING);
+                switch (knight.idle_state) {
+                    case BLINKING:
+                        if (knight.buffer <= 200) {
+                            knight.buffer++;
+                            set_frame(&knight, STANDING);
+                        } else if (knight.buffer <= 205) {
+                            knight.buffer++;
+                            set_frame(&knight, BLINK_1);
+                        } else if (knight.buffer <= 210) {
+                            knight.buffer++;
+                            set_frame(&knight, BLINK_2);
+                        } else if (knight.buffer <= 215) {
+                            knight.buffer++;
+                            set_frame(&knight, BLINK_3);
+                        } else if (knight.buffer <= 220) {
+                            knight.buffer = 0;
+                            set_frame(&knight, STANDING);
+                            knight.idle_state = get_rand_idle_state();
+                        }
+                        break;
+
+                    case LOOK_AROUND:
+                        if (knight.buffer < 50) {
+                            knight.buffer++;
+                            set_frame(&knight, STANDING);
+                        } else if (knight.buffer <= 100) {
+                            knight.buffer++;
+                            set_frame(&knight, LOOK_UP);
+                        } else if (knight.buffer <= 150) {
+                            knight.buffer++;
+                            set_frame(&knight, LOOK_DOWN);
+                        } else if (knight.buffer <= 200) {
+                            knight.buffer = 0;
+                            set_frame(&knight, STANDING);
+                            knight.idle_state = get_rand_idle_state();
+                        }
+                        break;
+
+                    case STILL:
+                        if (knight.buffer < 200) {
+                            knight.buffer++;
+                        } else {
+                            knight.buffer = 0;
+                            knight.idle_state = get_rand_idle_state();
+                        }
+                        set_frame(&knight, STANDING);
+                        break;
+                }
                 break;
         }
 
