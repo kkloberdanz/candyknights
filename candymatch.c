@@ -236,6 +236,57 @@ enum IdleState get_rand_idle_state() {
     return rand() % STILL;
 }
 
+void idle_animation(struct Entity *entity) {
+    switch (entity->idle_state) {
+        case BLINKING:
+            if (entity->buffer <= 200) {
+                entity->buffer++;
+                set_frame(entity, STANDING);
+            } else if (entity->buffer <= 205) {
+                entity->buffer++;
+                set_frame(entity, BLINK_1);
+            } else if (entity->buffer <= 210) {
+                entity->buffer++;
+                set_frame(entity, BLINK_2);
+            } else if (entity->buffer <= 215) {
+                entity->buffer++;
+                set_frame(entity, BLINK_3);
+            } else if (entity->buffer <= 220) {
+                entity->buffer = 0;
+                set_frame(entity, STANDING);
+                entity->idle_state = get_rand_idle_state();
+            }
+            break;
+
+        case LOOK_AROUND:
+            if (entity->buffer < 50) {
+                entity->buffer++;
+                set_frame(entity, STANDING);
+            } else if (entity->buffer <= 100) {
+                entity->buffer++;
+                set_frame(entity, LOOK_UP);
+            } else if (entity->buffer <= 150) {
+                entity->buffer++;
+                set_frame(entity, LOOK_DOWN);
+            } else if (entity->buffer <= 200) {
+                entity->buffer = 0;
+                set_frame(entity, STANDING);
+                entity->idle_state = get_rand_idle_state();
+            }
+            break;
+
+        case STILL:
+            if (entity->buffer < 200) {
+                entity->buffer++;
+            } else {
+                entity->buffer = 0;
+                entity->idle_state = get_rand_idle_state();
+            }
+            set_frame(entity, STANDING);
+            break;
+    }
+}
+
 int main(void) {
     /* initialize */
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -348,7 +399,7 @@ int main(void) {
                 if (knight.buffer <= 5) {
                     knight.buffer++;
                     set_frame(&knight, ATTACKING_1);
-                } else if (knight.buffer <= 12) {
+                } else if (knight.buffer <= 16) {
                     knight.buffer++;
                     set_frame(&knight, ATTACKING_2);
                 } else {
@@ -390,54 +441,7 @@ int main(void) {
                 break;
 
             case IDLE:
-                switch (knight.idle_state) {
-                    case BLINKING:
-                        if (knight.buffer <= 200) {
-                            knight.buffer++;
-                            set_frame(&knight, STANDING);
-                        } else if (knight.buffer <= 205) {
-                            knight.buffer++;
-                            set_frame(&knight, BLINK_1);
-                        } else if (knight.buffer <= 210) {
-                            knight.buffer++;
-                            set_frame(&knight, BLINK_2);
-                        } else if (knight.buffer <= 215) {
-                            knight.buffer++;
-                            set_frame(&knight, BLINK_3);
-                        } else if (knight.buffer <= 220) {
-                            knight.buffer = 0;
-                            set_frame(&knight, STANDING);
-                            knight.idle_state = get_rand_idle_state();
-                        }
-                        break;
-
-                    case LOOK_AROUND:
-                        if (knight.buffer < 50) {
-                            knight.buffer++;
-                            set_frame(&knight, STANDING);
-                        } else if (knight.buffer <= 100) {
-                            knight.buffer++;
-                            set_frame(&knight, LOOK_UP);
-                        } else if (knight.buffer <= 150) {
-                            knight.buffer++;
-                            set_frame(&knight, LOOK_DOWN);
-                        } else if (knight.buffer <= 200) {
-                            knight.buffer = 0;
-                            set_frame(&knight, STANDING);
-                            knight.idle_state = get_rand_idle_state();
-                        }
-                        break;
-
-                    case STILL:
-                        if (knight.buffer < 200) {
-                            knight.buffer++;
-                        } else {
-                            knight.buffer = 0;
-                            knight.idle_state = get_rand_idle_state();
-                        }
-                        set_frame(&knight, STANDING);
-                        break;
-                }
+                idle_animation(&knight);
                 break;
         }
 
