@@ -273,6 +273,8 @@ int main(void) {
         fprintf(stderr, "failed to set resolution: %s\n", SDL_GetError());
     }
 
+    SDL_ShowCursor(SDL_DISABLE);
+
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
@@ -283,8 +285,8 @@ int main(void) {
 
     struct Entity knight = {
         .rect = {
-            .x = 0,
-            .y = 0,
+            .x = 300,
+            .y = 400,
             .w = 128,
             .h = 128
         },
@@ -357,6 +359,7 @@ int main(void) {
                 break;
 
             case WALKING:
+                printf("position: (%d, %d)\n", knight.rect.x, knight.rect.y);
                 if (dir & DOWN) {
                     if (knight.rect.y < SCREEN_HEIGHT - knight.rect.h) {
                         knight.rect.y += knight.y_vel;
@@ -364,7 +367,7 @@ int main(void) {
                     }
                 }
                 if (dir & UP) {
-                    if (knight.rect.y > 0) {
+                    if (knight.rect.y > 310) {
                         knight.rect.y -= knight.y_vel;
                         walk_animation(&knight);
                     }
