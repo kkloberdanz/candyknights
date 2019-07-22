@@ -287,7 +287,64 @@ void idle_animation(struct Entity *entity) {
     }
 }
 
-char game_loop(struct Entity *knight, SDL_Joystick *joystick, SDL_Renderer *renderer) {
+void game_logic(struct Entity *entity, enum Direction dir) {
+    switch (entity->state) {
+        case ATTACKING:
+            if (entity->buffer <= 5) {
+                entity->buffer++;
+                set_frame(entity, ATTACKING_1);
+            } else if (entity->buffer <= 16) {
+                entity->buffer++;
+                set_frame(entity, ATTACKING_2);
+            } else {
+                set_frame(entity, STANDING);
+                entity->state = IDLE;
+                entity->buffer = 0;
+            }
+            break;
+
+        case WALKING:
+            printf("position: (%d, %d)\n", entity->rect.x, entity->rect.y);
+            if (dir & DOWN) {
+                if (entity->rect.y < SCREEN_HEIGHT - entity->rect.h) {
+                    entity->rect.y += entity->y_vel;
+                    walk_animation(entity);
+                }
+            }
+            if (dir & UP) {
+                if (entity->rect.y > 310) {
+                    entity->rect.y -= entity->y_vel;
+                    walk_animation(entity);
+                }
+            }
+            if (dir & RIGHT) {
+                if (entity->rect.x < SCREEN_WIDTH - entity->rect.w) {
+                    entity->rect.x += entity->x_vel;
+                    entity->flip = SDL_FLIP_NONE;
+                    walk_animation(entity);
+                }
+            }
+            if (dir & LEFT) {
+                if (entity->rect.x > 0) {
+                    entity->rect.x -= entity->x_vel;
+                    entity->flip = SDL_FLIP_HORIZONTAL;
+                    walk_animation(entity);
+                }
+            }
+            entity->state = IDLE;
+            break;
+
+        case IDLE:
+            idle_animation(entity);
+            break;
+    }
+}
+
+char game_loop(
+    struct Entity *knight,
+    SDL_Joystick *joystick,
+    SDL_Renderer *renderer
+) {
     SDL_Texture *background_image = load_texture(
         "assets/background.png",
         renderer);
@@ -323,57 +380,7 @@ char game_loop(struct Entity *knight, SDL_Joystick *joystick, SDL_Renderer *rend
             }
         }
 
-        /* do game logic */
-        switch (knight->state) {
-            case ATTACKING:
-                if (knight->buffer <= 5) {
-                    knight->buffer++;
-                    set_frame(knight, ATTACKING_1);
-                } else if (knight->buffer <= 16) {
-                    knight->buffer++;
-                    set_frame(knight, ATTACKING_2);
-                } else {
-                    set_frame(knight, STANDING);
-                    knight->state = IDLE;
-                    knight->buffer = 0;
-                }
-                break;
-
-            case WALKING:
-                printf("position: (%d, %d)\n", knight->rect.x, knight->rect.y);
-                if (dir & DOWN) {
-                    if (knight->rect.y < SCREEN_HEIGHT - knight->rect.h) {
-                        knight->rect.y += knight->y_vel;
-                        walk_animation(knight);
-                    }
-                }
-                if (dir & UP) {
-                    if (knight->rect.y > 310) {
-                        knight->rect.y -= knight->y_vel;
-                        walk_animation(knight);
-                    }
-                }
-                if (dir & RIGHT) {
-                    if (knight->rect.x < SCREEN_WIDTH - knight->rect.w) {
-                        knight->rect.x += knight->x_vel;
-                        knight->flip = SDL_FLIP_NONE;
-                        walk_animation(knight);
-                    }
-                }
-                if (dir & LEFT) {
-                    if (knight->rect.x > 0) {
-                        knight->rect.x -= knight->x_vel;
-                        knight->flip = SDL_FLIP_HORIZONTAL;
-                        walk_animation(knight);
-                    }
-                }
-                knight->state = IDLE;
-                break;
-
-            case IDLE:
-                idle_animation(knight);
-                break;
-        }
+        game_logic(knight, dir);
 
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, background_image, NULL, NULL);
