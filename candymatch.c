@@ -287,6 +287,116 @@ void idle_animation(struct Entity *entity) {
     }
 }
 
+char game_loop(struct Entity *knight, SDL_Joystick *joystick, SDL_Renderer *renderer) {
+    SDL_Texture *background_image = load_texture(
+        "assets/background.png",
+        renderer);
+
+    unsigned int button_debounce = 150;
+    unsigned int last_button_press = 0;
+    while (game_running()) {
+        int start_tick = SDL_GetTicks();
+
+        /* scan buttons */
+        char dir = get_direction(joystick);
+        if (dir) {
+            knight->state = WALKING;
+        } else {
+            char button = get_button(joystick);
+            if ((SDL_GetTicks() - last_button_press) > button_debounce) {
+                if (button) {
+                    if (button & A) {
+                        last_button_press = SDL_GetTicks();
+                        if (knight->state != ATTACKING) {
+                            knight->buffer = 0;
+                            knight->state = ATTACKING;
+                        }
+                    }
+                    if (button & B) {
+                        last_button_press = SDL_GetTicks();
+                    }
+                    if (button & START) {
+                        last_button_press = SDL_GetTicks();
+                        goto cleanup;
+                    }
+                }
+            }
+        }
+
+        /* do game logic */
+        switch (knight->state) {
+            case ATTACKING:
+                if (knight->buffer <= 5) {
+                    knight->buffer++;
+                    set_frame(knight, ATTACKING_1);
+                } else if (knight->buffer <= 16) {
+                    knight->buffer++;
+                    set_frame(knight, ATTACKING_2);
+                } else {
+                    set_frame(knight, STANDING);
+                    knight->state = IDLE;
+                    knight->buffer = 0;
+                }
+                break;
+
+            case WALKING:
+                printf("position: (%d, %d)\n", knight->rect.x, knight->rect.y);
+                if (dir & DOWN) {
+                    if (knight->rect.y < SCREEN_HEIGHT - knight->rect.h) {
+                        knight->rect.y += knight->y_vel;
+                        walk_animation(knight);
+                    }
+                }
+                if (dir & UP) {
+                    if (knight->rect.y > 310) {
+                        knight->rect.y -= knight->y_vel;
+                        walk_animation(knight);
+                    }
+                }
+                if (dir & RIGHT) {
+                    if (knight->rect.x < SCREEN_WIDTH - knight->rect.w) {
+                        knight->rect.x += knight->x_vel;
+                        knight->flip = SDL_FLIP_NONE;
+                        walk_animation(knight);
+                    }
+                }
+                if (dir & LEFT) {
+                    if (knight->rect.x > 0) {
+                        knight->rect.x -= knight->x_vel;
+                        knight->flip = SDL_FLIP_HORIZONTAL;
+                        walk_animation(knight);
+                    }
+                }
+                knight->state = IDLE;
+                break;
+
+            case IDLE:
+                idle_animation(knight);
+                break;
+        }
+
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, background_image, NULL, NULL);
+
+        SDL_RenderCopyEx(
+            renderer,
+            knight->texture,
+            &knight->texture_rect,
+            &knight->rect,
+            0.0, // angle
+            &knight->center, // center
+            knight->flip
+        );
+
+        SDL_RenderPresent(renderer);
+
+        SDL_Delay(20 - (start_tick - SDL_GetTicks()));
+    }
+cleanup:
+    SDL_DestroyTexture(background_image);
+    return 0;
+}
+
 int main(void) {
     /* initialize */
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -330,10 +440,6 @@ int main(void) {
 
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 
-    SDL_Texture *background_image = load_texture(
-        "assets/background.png",
-        renderer);
-
     struct Entity knight = {
         .rect = {
             .x = 300,
@@ -362,109 +468,8 @@ int main(void) {
         .idle_state = STILL
     };
 
-    unsigned int button_debounce = 150;
-    unsigned int last_button_press = 0;
-    while (game_running()) {
-        int start_tick = SDL_GetTicks();
+    int status_code = game_loop(&knight, joystick, renderer);
 
-        /* scan buttons */
-        char dir = get_direction(joystick);
-        if (dir) {
-            knight.state = WALKING;
-        } else {
-            char button = get_button(joystick);
-            if ((SDL_GetTicks() - last_button_press) > button_debounce) {
-                if (button) {
-                    if (button & A) {
-                        last_button_press = SDL_GetTicks();
-                        if (knight.state != ATTACKING) {
-                            knight.buffer = 0;
-                            knight.state = ATTACKING;
-                        }
-                    }
-                    if (button & B) {
-                        last_button_press = SDL_GetTicks();
-                    }
-                    if (button & START) {
-                        last_button_press = SDL_GetTicks();
-                        goto exit_gameloop;
-                    }
-                }
-            }
-        }
-
-        /* do game logic */
-        switch (knight.state) {
-            case ATTACKING:
-                if (knight.buffer <= 5) {
-                    knight.buffer++;
-                    set_frame(&knight, ATTACKING_1);
-                } else if (knight.buffer <= 16) {
-                    knight.buffer++;
-                    set_frame(&knight, ATTACKING_2);
-                } else {
-                    set_frame(&knight, STANDING);
-                    knight.state = IDLE;
-                    knight.buffer = 0;
-                }
-                break;
-
-            case WALKING:
-                printf("position: (%d, %d)\n", knight.rect.x, knight.rect.y);
-                if (dir & DOWN) {
-                    if (knight.rect.y < SCREEN_HEIGHT - knight.rect.h) {
-                        knight.rect.y += knight.y_vel;
-                        walk_animation(&knight);
-                    }
-                }
-                if (dir & UP) {
-                    if (knight.rect.y > 310) {
-                        knight.rect.y -= knight.y_vel;
-                        walk_animation(&knight);
-                    }
-                }
-                if (dir & RIGHT) {
-                    if (knight.rect.x < SCREEN_WIDTH - knight.rect.w) {
-                        knight.rect.x += knight.x_vel;
-                        knight.flip = SDL_FLIP_NONE;
-                        walk_animation(&knight);
-                    }
-                }
-                if (dir & LEFT) {
-                    if (knight.rect.x > 0) {
-                        knight.rect.x -= knight.x_vel;
-                        knight.flip = SDL_FLIP_HORIZONTAL;
-                        walk_animation(&knight);
-                    }
-                }
-                knight.state = IDLE;
-                break;
-
-            case IDLE:
-                idle_animation(&knight);
-                break;
-        }
-
-        SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, background_image, NULL, NULL);
-
-        SDL_RenderCopyEx(
-            renderer,
-            knight.texture,
-            &knight.texture_rect,
-            &knight.rect,
-            0.0, // angle
-            &knight.center, // center
-            knight.flip
-        );
-
-        SDL_RenderPresent(renderer);
-
-        SDL_Delay(20 - (start_tick - SDL_GetTicks()));
-    }
-
-exit_gameloop:
-    SDL_DestroyTexture(background_image);
     puts("destroy window");
     SDL_DestroyWindow(window);
     puts("shutting down sdl");
@@ -474,5 +479,5 @@ exit_gameloop:
     IMG_Quit();
     SDL_Quit();
     puts("done");
-    return 0;
+    return status_code;
 }
