@@ -71,8 +71,13 @@ bool game_running() {
     return true;
 }
 
+int entity_render_compare(const void *a, const void *b) {
+    struct Entity *e1 = *(struct Entity **)a;
+    struct Entity *e2 = *(struct Entity **)b;
+    return e1->rect.y - e2->rect.y;
+}
+
 char game_loop(
-    struct Entity *player,
     SDL_Joystick *joystick,
     SDL_Renderer *renderer
 ) {
@@ -81,23 +86,37 @@ char game_loop(
         renderer
     );
 
+    struct Entity player = create_knight(renderer);
     struct Entity enemy = create_knight(renderer);
+
+    struct Entity *to_render[2];
+    to_render[0] = &player;
+    to_render[1] = &enemy;
+    const size_t num_to_render = sizeof(to_render) / sizeof(struct Entity *);
 
     while (game_running()) {
         int start_tick = SDL_GetTicks();
 
-        if (handle_player_input(player, joystick) == END_GAME) {
+        if (handle_player_input(&player, joystick) == END_GAME) {
             goto cleanup;
         }
 
-        entity_logic(player);
+        entity_logic(&player);
         entity_logic(&enemy);
 
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, background_image, NULL, NULL);
 
-        entity_render(&enemy, renderer);
-        entity_render(player, renderer);
+        qsort(
+            to_render,
+            num_to_render,
+            sizeof(struct Entity *),
+            entity_render_compare
+        );
+
+        for (size_t i = 0; i < num_to_render; i++) {
+            entity_render(to_render[i], renderer);
+        }
 
         SDL_RenderPresent(renderer);
 
@@ -152,9 +171,7 @@ int main(void) {
 
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 
-    struct Entity player = create_knight(renderer);
-
-    int status_code = game_loop(&player, joystick, renderer);
+    int status_code = game_loop(joystick, renderer);
 
     puts("destroy window");
     SDL_DestroyWindow(window);
