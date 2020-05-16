@@ -45,4 +45,6 @@ void entity_logic(struct Entity *entity);
 
 void entity_render(struct Entity *entity, SDL_Renderer *renderer);
 
+void enemy_ai_logic(struct Entity *player, struct Entity *enemy);
+
 #endif /* ENTITY_H */

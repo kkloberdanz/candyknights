@@ -165,32 +165,33 @@ void entity_logic(struct Entity *entity) {
 
         case WALKING:
             printf("position: (%d, %d)\n", entity->rect.x, entity->rect.y);
+
             if (entity->dir & DOWN) {
                 if (entity->rect.y < SCREEN_HEIGHT - entity->rect.h) {
                     entity->rect.y += entity->y_vel;
                     walk_animation(entity);
                 }
-            }
-            if (entity->dir & UP) {
+            } else if (entity->dir & UP) {
                 if (entity->rect.y > 310) {
                     entity->rect.y -= entity->y_vel;
                     walk_animation(entity);
                 }
             }
+
             if (entity->dir & RIGHT) {
                 if (entity->rect.x < SCREEN_WIDTH - entity->rect.w) {
                     entity->rect.x += entity->x_vel;
                     entity->flip = SDL_FLIP_NONE;
                     walk_animation(entity);
                 }
-            }
-            if (entity->dir & LEFT) {
+            } else if (entity->dir & LEFT) {
                 if (entity->rect.x > 0) {
                     entity->rect.x -= entity->x_vel;
                     entity->flip = SDL_FLIP_HORIZONTAL;
                     walk_animation(entity);
                 }
             }
+
             entity->state = IDLE;
             break;
 
@@ -210,4 +211,29 @@ void entity_render(struct Entity *entity, SDL_Renderer *renderer) {
         &entity->center, // center
         entity->flip
     );
+}
+
+void enemy_ai_logic(struct Entity *player, struct Entity *enemy) {
+    enemy->dir = 0;
+    if (enemy->rect.y > player->rect.y) {
+        enemy->dir |= UP;
+        puts("moving enemy up");
+    } else if (enemy->rect.y < player->rect.y) {
+        enemy->dir |= DOWN;
+        puts("moving enemy down");
+    }
+
+    if (enemy->rect.x > player->rect.x) {
+        enemy->dir |= LEFT;
+        puts("moving enemy left");
+    } else if (enemy->rect.x < player->rect.x) {
+        enemy->dir |= RIGHT;
+        puts("moving enemy right");
+    }
+
+    if (!enemy->dir) { /* if right on top of player */
+        enemy->state = ATTACKING;
+    } else {
+        enemy->state = WALKING;
+    }
 }

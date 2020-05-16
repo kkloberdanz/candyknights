@@ -89,6 +89,10 @@ char game_loop(
     struct Entity player = create_knight(renderer);
     struct Entity enemy = create_knight(renderer);
 
+    /* make enemies slightly slower than player */
+    enemy.y_vel = 0.1 * player.y_vel;
+    enemy.x_vel = 0.1 * player.x_vel;
+
     struct Entity *to_render[2];
     to_render[0] = &player;
     to_render[1] = &enemy;
@@ -102,6 +106,8 @@ char game_loop(
         }
 
         entity_logic(&player);
+
+        enemy_ai_logic(&player, &enemy);
         entity_logic(&enemy);
 
         SDL_RenderClear(renderer);
