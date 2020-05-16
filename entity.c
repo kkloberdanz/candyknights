@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
@@ -89,6 +90,7 @@ struct Entity create_knight(SDL_Renderer *renderer) {
             .w = 128,
             .h = 128
         },
+        .health = 13,
         .texture = load_texture("assets/knight.png", renderer),
         .texture_rect = {
             .x = 0,
@@ -216,6 +218,23 @@ void entity_render(struct Entity *entity, SDL_Renderer *renderer) {
     );
 }
 
+static bool obj_touching(SDL_Rect *rect1, SDL_Rect *rect2) {
+    return !(rect1->x >= rect2->x + rect2->w) &&
+           !(rect1->y >= rect2->y + rect2->h) &&
+           !(rect2->x >= rect1->x + rect1->w) &&
+           !(rect2->y >= rect1->y + rect1->h);
+}
+
+static SDL_Rect get_hitbox(SDL_Rect *rect) {
+    SDL_Rect hitbox = {
+        .x = rect->x,
+        .y = rect->y,
+        .h = rect->h - 20,
+        .w = rect->w - 100,
+    };
+    return hitbox;
+}
+
 void enemy_ai_logic(struct Entity *player, struct Entity *enemy) {
     enemy->dir = 0;
 
@@ -245,8 +264,13 @@ void enemy_ai_logic(struct Entity *player, struct Entity *enemy) {
         puts("moving enemy right");
     }
 
-    if (!enemy->dir) { /* if right on top of player */
-        enemy->state = ATTACKING;
+    SDL_Rect player_hb = get_hitbox(&player->rect);
+    SDL_Rect enemy_hb = get_hitbox(&enemy->rect);
+    if (obj_touching(&player_hb, &enemy_hb)) {
+        /* if right on top of player, ATTACK! */
+        if (enemy->actions & 0x111) {
+            enemy->state = ATTACKING;
+        }
     } else {
         enemy->state = WALKING;
     }

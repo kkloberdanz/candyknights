@@ -36,13 +36,6 @@ int rand_ball_velocity() {
     return velocity;
 }
 
-bool obj_touching(SDL_Rect *rect1, SDL_Rect *rect2) {
-    return !(rect1->x >= rect2->x + rect2->w) &&
-           !(rect1->y >= rect2->y + rect2->h) &&
-           !(rect2->x >= rect1->x + rect1->w) &&
-           !(rect2->y >= rect1->y + rect1->h);
-}
-
 bool obj_in_bounds(SDL_Rect *rect) {
     if (rect->x > SCREEN_WIDTH) {
         return false;
@@ -93,10 +86,16 @@ char game_loop(
     enemy.y_vel = 0.9 * player.y_vel;
     enemy.x_vel = 0.9 * player.x_vel;
 
+    player.dir = LEFT;
+    player.state = WALKING;
+    entity_logic(&player); // setup player position
+
     struct Entity *to_render[2];
     to_render[0] = &player;
     to_render[1] = &enemy;
     const size_t num_to_render = sizeof(to_render) / sizeof(struct Entity *);
+    player.rect.x = 0.8 * SCREEN_WIDTH;
+    enemy.rect.x = 0.2 * SCREEN_WIDTH;
 
     while (game_running()) {
         int start_tick = SDL_GetTicks();

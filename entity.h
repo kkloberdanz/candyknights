@@ -24,6 +24,7 @@ struct Entity {
     int y_vel;
     enum EntityState state;
     unsigned char buffer;
+    unsigned char health;
     enum IdleState idle_state;
     enum Direction dir;
     int actions;
