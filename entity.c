@@ -146,3 +146,68 @@ enum GameState handle_player_input(
     }
     return PLAY_GAME;
 }
+
+void entity_logic(struct Entity *entity) {
+    switch (entity->state) {
+        case ATTACKING:
+            if (entity->buffer <= 5) {
+                entity->buffer++;
+                set_frame(entity, ATTACKING_1);
+            } else if (entity->buffer <= 16) {
+                entity->buffer++;
+                set_frame(entity, ATTACKING_2);
+            } else {
+                set_frame(entity, STANDING);
+                entity->state = IDLE;
+                entity->buffer = 0;
+            }
+            break;
+
+        case WALKING:
+            printf("position: (%d, %d)\n", entity->rect.x, entity->rect.y);
+            if (entity->dir & DOWN) {
+                if (entity->rect.y < SCREEN_HEIGHT - entity->rect.h) {
+                    entity->rect.y += entity->y_vel;
+                    walk_animation(entity);
+                }
+            }
+            if (entity->dir & UP) {
+                if (entity->rect.y > 310) {
+                    entity->rect.y -= entity->y_vel;
+                    walk_animation(entity);
+                }
+            }
+            if (entity->dir & RIGHT) {
+                if (entity->rect.x < SCREEN_WIDTH - entity->rect.w) {
+                    entity->rect.x += entity->x_vel;
+                    entity->flip = SDL_FLIP_NONE;
+                    walk_animation(entity);
+                }
+            }
+            if (entity->dir & LEFT) {
+                if (entity->rect.x > 0) {
+                    entity->rect.x -= entity->x_vel;
+                    entity->flip = SDL_FLIP_HORIZONTAL;
+                    walk_animation(entity);
+                }
+            }
+            entity->state = IDLE;
+            break;
+
+        case IDLE:
+            idle_animation(entity);
+            break;
+    }
+}
+
+void entity_render(struct Entity *entity, SDL_Renderer *renderer) {
+    SDL_RenderCopyEx(
+        renderer,
+        entity->texture,
+        &entity->texture_rect,
+        &entity->rect,
+        0.0, // angle
+        &entity->center, // center
+        entity->flip
+    );
+}

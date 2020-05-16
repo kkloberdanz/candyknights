@@ -71,61 +71,8 @@ bool game_running() {
     return true;
 }
 
-void player_logic(struct Entity *entity) {
-    switch (entity->state) {
-        case ATTACKING:
-            if (entity->buffer <= 5) {
-                entity->buffer++;
-                set_frame(entity, ATTACKING_1);
-            } else if (entity->buffer <= 16) {
-                entity->buffer++;
-                set_frame(entity, ATTACKING_2);
-            } else {
-                set_frame(entity, STANDING);
-                entity->state = IDLE;
-                entity->buffer = 0;
-            }
-            break;
-
-        case WALKING:
-            printf("position: (%d, %d)\n", entity->rect.x, entity->rect.y);
-            if (entity->dir & DOWN) {
-                if (entity->rect.y < SCREEN_HEIGHT - entity->rect.h) {
-                    entity->rect.y += entity->y_vel;
-                    walk_animation(entity);
-                }
-            }
-            if (entity->dir & UP) {
-                if (entity->rect.y > 310) {
-                    entity->rect.y -= entity->y_vel;
-                    walk_animation(entity);
-                }
-            }
-            if (entity->dir & RIGHT) {
-                if (entity->rect.x < SCREEN_WIDTH - entity->rect.w) {
-                    entity->rect.x += entity->x_vel;
-                    entity->flip = SDL_FLIP_NONE;
-                    walk_animation(entity);
-                }
-            }
-            if (entity->dir & LEFT) {
-                if (entity->rect.x > 0) {
-                    entity->rect.x -= entity->x_vel;
-                    entity->flip = SDL_FLIP_HORIZONTAL;
-                    walk_animation(entity);
-                }
-            }
-            entity->state = IDLE;
-            break;
-
-        case IDLE:
-            idle_animation(entity);
-            break;
-    }
-}
-
 char game_loop(
-    struct Entity *knight,
+    struct Entity *player,
     SDL_Joystick *joystick,
     SDL_Renderer *renderer
 ) {
@@ -134,26 +81,23 @@ char game_loop(
         renderer
     );
 
+    struct Entity enemy = create_knight(renderer);
+
     while (game_running()) {
         int start_tick = SDL_GetTicks();
 
-        if (handle_player_input(knight, joystick) == END_GAME) {
+        if (handle_player_input(player, joystick) == END_GAME) {
             goto cleanup;
         }
-        player_logic(knight);
+
+        entity_logic(player);
+        entity_logic(&enemy);
 
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, background_image, NULL, NULL);
 
-        SDL_RenderCopyEx(
-            renderer,
-            knight->texture,
-            &knight->texture_rect,
-            &knight->rect,
-            0.0, // angle
-            &knight->center, // center
-            knight->flip
-        );
+        entity_render(&enemy, renderer);
+        entity_render(player, renderer);
 
         SDL_RenderPresent(renderer);
 
@@ -208,9 +152,9 @@ int main(void) {
 
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 
-    struct Entity knight = create_knight(renderer);
+    struct Entity player = create_knight(renderer);
 
-    int status_code = game_loop(&knight, joystick, renderer);
+    int status_code = game_loop(&player, joystick, renderer);
 
     puts("destroy window");
     SDL_DestroyWindow(window);

@@ -41,4 +41,8 @@ enum GameState handle_player_input(
     SDL_Joystick *joystick
 );
 
+void entity_logic(struct Entity *entity);
+
+void entity_render(struct Entity *entity, SDL_Renderer *renderer);
+
 #endif /* ENTITY_H */
