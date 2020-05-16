@@ -103,8 +103,8 @@ struct Entity create_knight(SDL_Renderer *renderer) {
             .x = 64,
             .y = 64
         },
-        .x_vel = 10,
-        .y_vel = 10,
+        .x_vel = 3,
+        .y_vel = 2,
         .state = IDLE,
         .buffer = 0,
         .idle_state = STILL,

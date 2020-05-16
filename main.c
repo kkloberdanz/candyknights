@@ -90,8 +90,8 @@ char game_loop(
     struct Entity enemy = create_knight(renderer);
 
     /* make enemies slightly slower than player */
-    enemy.y_vel = 0.1 * player.y_vel;
-    enemy.x_vel = 0.1 * player.x_vel;
+    enemy.y_vel = 0.9 * player.y_vel;
+    enemy.x_vel = 0.9 * player.x_vel;
 
     struct Entity *to_render[2];
     to_render[0] = &player;
