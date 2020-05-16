@@ -26,6 +26,9 @@ struct Entity {
     unsigned char buffer;
     enum IdleState idle_state;
     enum Direction dir;
+    int actions;
+    int sleep_actions;
+    int max_actions;
 };
 
 void set_frame(struct Entity *entity, enum SpriteFrame frame_num);

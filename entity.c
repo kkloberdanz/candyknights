@@ -107,7 +107,10 @@ struct Entity create_knight(SDL_Renderer *renderer) {
         .y_vel = 10,
         .state = IDLE,
         .buffer = 0,
-        .idle_state = STILL
+        .idle_state = STILL,
+        .actions = 100,
+        .sleep_actions = 0,
+        .max_actions = 100
     };
     return knight;
 }
@@ -215,6 +218,17 @@ void entity_render(struct Entity *entity, SDL_Renderer *renderer) {
 
 void enemy_ai_logic(struct Entity *player, struct Entity *enemy) {
     enemy->dir = 0;
+
+    if (enemy->sleep_actions >= 0) {
+        enemy->sleep_actions--;
+        return;
+    } else if (enemy->actions <= 0) {
+        enemy->actions = enemy->max_actions;
+        enemy->sleep_actions = enemy->max_actions;
+    } else {
+        enemy->actions--;
+    }
+
     if (enemy->rect.y > player->rect.y) {
         enemy->dir |= UP;
         puts("moving enemy up");
