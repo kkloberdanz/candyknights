@@ -4,6 +4,7 @@
 #include <SDL2/SDL.h>
 
 #include "sprite.h"
+#include "constants.h"
 
 enum EntityState {
     IDLE,
@@ -24,11 +25,20 @@ struct Entity {
     enum EntityState state;
     unsigned char buffer;
     enum IdleState idle_state;
+    enum Direction dir;
 };
 
 void set_frame(struct Entity *entity, enum SpriteFrame frame_num);
+
 void walk_animation(struct Entity *entity);
+
 void idle_animation(struct Entity *entity);
+
 struct Entity create_knight(SDL_Renderer *renderer);
+
+enum GameState handle_player_input(
+    struct Entity *player,
+    SDL_Joystick *joystick
+);
 
 #endif /* ENTITY_H */

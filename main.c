@@ -28,37 +28,7 @@
 #include "entity.h"
 #include "sprite.h"
 #include "textures.h"
-
-#define MAX(A, B) (((A) > (B)) ? (A) : (B))
-
-enum Constants {
-    SCREEN_WIDTH = 800,
-    SCREEN_HEIGHT = 600,
-    MAX_VELOCITY = 20,
-    MIN_VELOCITY = 10,
-    WINNING_SCORE = 10
-};
-
-enum Direction {
-    UP = 1,
-    DOWN = 2,
-    LEFT = 4,
-    RIGHT = 8
-};
-
-enum ControllerButton {
-    CTRL_A = 1,
-    CTRL_B = 0,
-    CTRL_START = 9,
-    CTRL_SELECT = 8
-};
-
-enum Button {
-    A = 1,
-    B = 2,
-    START = 4,
-    SELECT = 8
-};
+#include "constants.h"
 
 int rand_ball_velocity() {
     int random_num = rand() % MAX_VELOCITY;
@@ -87,74 +57,6 @@ bool obj_in_bounds(SDL_Rect *rect) {
     }
 }
 
-char *get_button_str(enum Button button) {
-    switch (button) {
-        case B:
-            return "B";
-        case A:
-            return "A";
-        case START:
-            return "START";
-        case SELECT:
-            return "SELECT";
-        default:
-            return "NOT A BUTTON";
-    }
-}
-
-int translate_controller_button(int button_num) {
-    switch (button_num) {
-        case CTRL_A:
-            return A;
-        case CTRL_B:
-            return B;
-        case CTRL_START:
-            return START;
-        case CTRL_SELECT:
-            return SELECT;
-        default:
-            return -1;
-    }
-}
-
-char get_button(SDL_Joystick *joystick) {
-    int num_buttons = SDL_JoystickNumButtons(joystick);
-    char button = 0;
-    for (int i = 0; i < num_buttons; i++) {
-        if (SDL_JoystickGetButton(joystick, i)) {
-            int button_pressed = translate_controller_button(i);
-            if (button_pressed != -1) {
-                button |= button_pressed;
-            }
-        }
-    }
-    return button;
-}
-
-char get_direction(SDL_Joystick *joystick) {
-    int num_axes = SDL_JoystickNumAxes(joystick);
-    char direction = 0;
-    for (int i = 0; i < num_axes; i++) {
-        int axis = SDL_JoystickGetAxis(joystick, i);
-        if (axis) {
-            if (i == 1) {
-                if (axis < 0) {
-                    direction |= UP;
-                } else {
-                    direction |= DOWN;
-                }
-            } else if (i == 0) {
-                if (axis < 0) {
-                    direction |= LEFT;
-                } else {
-                    direction |= RIGHT;
-                }
-            }
-        }
-    }
-    return direction;
-}
-
 bool game_running() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -169,7 +71,7 @@ bool game_running() {
     return true;
 }
 
-void player_logic(struct Entity *entity, enum Direction dir) {
+void player_logic(struct Entity *entity) {
     switch (entity->state) {
         case ATTACKING:
             if (entity->buffer <= 5) {
@@ -187,26 +89,26 @@ void player_logic(struct Entity *entity, enum Direction dir) {
 
         case WALKING:
             printf("position: (%d, %d)\n", entity->rect.x, entity->rect.y);
-            if (dir & DOWN) {
+            if (entity->dir & DOWN) {
                 if (entity->rect.y < SCREEN_HEIGHT - entity->rect.h) {
                     entity->rect.y += entity->y_vel;
                     walk_animation(entity);
                 }
             }
-            if (dir & UP) {
+            if (entity->dir & UP) {
                 if (entity->rect.y > 310) {
                     entity->rect.y -= entity->y_vel;
                     walk_animation(entity);
                 }
             }
-            if (dir & RIGHT) {
+            if (entity->dir & RIGHT) {
                 if (entity->rect.x < SCREEN_WIDTH - entity->rect.w) {
                     entity->rect.x += entity->x_vel;
                     entity->flip = SDL_FLIP_NONE;
                     walk_animation(entity);
                 }
             }
-            if (dir & LEFT) {
+            if (entity->dir & LEFT) {
                 if (entity->rect.x > 0) {
                     entity->rect.x -= entity->x_vel;
                     entity->flip = SDL_FLIP_HORIZONTAL;
@@ -232,38 +134,13 @@ char game_loop(
         renderer
     );
 
-    unsigned int button_debounce = 150;
-    unsigned int last_button_press = 0;
     while (game_running()) {
         int start_tick = SDL_GetTicks();
 
-        /* scan buttons */
-        char dir = get_direction(joystick);
-        if (dir) {
-            knight->state = WALKING;
-        } else {
-            char button = get_button(joystick);
-            if ((SDL_GetTicks() - last_button_press) > button_debounce) {
-                if (button) {
-                    if (button & A) {
-                        last_button_press = SDL_GetTicks();
-                        if (knight->state != ATTACKING) {
-                            knight->buffer = 0;
-                            knight->state = ATTACKING;
-                        }
-                    }
-                    if (button & B) {
-                        last_button_press = SDL_GetTicks();
-                    }
-                    if (button & START) {
-                        last_button_press = SDL_GetTicks();
-                        goto cleanup;
-                    }
-                }
-            }
+        if (handle_player_input(knight, joystick) == END_GAME) {
+            goto cleanup;
         }
-
-        player_logic(knight, dir);
+        player_logic(knight);
 
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, background_image, NULL, NULL);
@@ -282,6 +159,7 @@ char game_loop(
 
         SDL_Delay(20 - (start_tick - SDL_GetTicks()));
     }
+
 cleanup:
     SDL_DestroyTexture(background_image);
     return 0;

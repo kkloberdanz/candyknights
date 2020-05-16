@@ -4,6 +4,8 @@
 #include "entity.h"
 #include "sprite.h"
 #include "textures.h"
+#include "controller.h"
+#include "constants.h"
 
 void set_frame(struct Entity *entity, enum SpriteFrame frame_num) {
     entity->current_frame = frame_num;
@@ -108,4 +110,39 @@ struct Entity create_knight(SDL_Renderer *renderer) {
         .idle_state = STILL
     };
     return knight;
+}
+
+enum GameState handle_player_input(
+    struct Entity *player,
+    SDL_Joystick *joystick
+) {
+    unsigned int last_button_press = 0;
+    const unsigned int button_debounce = 150;
+
+    /* scan buttons */
+    player->dir = get_direction(joystick);
+    if (player->dir) {
+        player->state = WALKING;
+    } else {
+        char button = get_button(joystick);
+        if ((SDL_GetTicks() - last_button_press) > button_debounce) {
+            if (button) {
+                if (button & A) {
+                    last_button_press = SDL_GetTicks();
+                    if (player->state != ATTACKING) {
+                        player->buffer = 0;
+                        player->state = ATTACKING;
+                    }
+                }
+                if (button & B) {
+                    last_button_press = SDL_GetTicks();
+                }
+                if (button & START) {
+                    last_button_press = SDL_GetTicks();
+                    return END_GAME;
+                }
+            }
+        }
+    }
+    return PLAY_GAME;
 }
