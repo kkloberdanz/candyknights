@@ -229,7 +229,7 @@ static SDL_Rect get_hitbox(SDL_Rect *rect) {
     SDL_Rect hitbox = {
         .x = rect->x,
         .y = rect->y,
-        .h = rect->h - 20,
+        .h = rect->h - 40,
         .w = rect->w - 100,
     };
     return hitbox;
