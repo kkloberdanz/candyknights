@@ -1,35 +1,35 @@
+CC=cc
 STDFLAG=-std=c99
 WARN_FLAGS=-Wall -Wextra -Wpedantic -Werror
-LFLAGS=-lSDL2 -lSDL2_image -lm
+LDFLAGS=-lSDL2 -lSDL2_image -lm
+CFLAGS=$(OPT) $(WARN_FLAGS)
 SANITIZE=-fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined
 
-OBJS=candymatch
+release: OPT=-Os -ffast-math
+release: all
 
-release: OPTIM_FLAGS=-Os -ffast-math
-release: run
+debug: OPT=-O0 -ggdb3 -DDEBUG $(SANITIZE)
+debug: all
 
-debug: OPTIM_FLAGS=-Og -ggdb -DDEBUG $(SANITIZE)
-debug: run
-
-valgrind: OPTIM_FLAGS=-Og -ggdb3 -DDEBUG
+valgrind: OPT=-Og -ggdb3 -DDEBUG
 valgrind: OTHER_RUNTIME=valgrind --leak-check=full
-valgrind: run
+valgrind: all
 
-CFLAGS=$(OPTIM_FLAGS) $(WARN_FLAGS) $(LFLAGS)
-CLANG=clang -Wassign-enum -Wenum-conversion
-GCC=gcc
+all: candyknights
 
-CC=$(CLANG)
+candyknights: main.o textures.o entity.o
+	$(CC) -o candyknights main.o textures.o entity.o $(LDFLAGS)
 
-run: $(OBJS)
-	$(OTHER_RUNTIME) ./candymatch
+main.o: main.c entity.h sprite.h
+	$(CC) -c main.c $(CFLAGS)
 
-strip: $(OBJS)
-	strip candymatch
+textures.o: textures.c  textures.h
+	$(CC) -c textures.c $(CFLAGS)
 
-candymatch:
-	$(CC) -o candymatch candymatch.c $(CFLAGS)
+entity.o: entity.c entity.h sprite.h textures.h
+	$(CC) -c entity.c $(CFLAGS)
 
 clean:
-	rm -f candymatch
+	rm -f candyknights
 	rm -f core
+	rm -f *.o

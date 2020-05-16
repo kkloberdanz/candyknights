@@ -1,5 +1,5 @@
-candymatch
+candyknights
 spritecutter
-*.swp
-*.swo
+*.sw?
 core
+*.o
