@@ -132,8 +132,14 @@ char game_loop(
         cake_render(renderer, &cake);
         if (player.health == 0) {
             puts("you have died");
+            player.texture = cake.textures[0];
+            player.rect.h = 64;
+            player.rect.w = 64;
         } else if (enemy.health == 0) {
             puts("you win!");
+            enemy.texture = cake.textures[0];
+            enemy.rect.h = 64;
+            enemy.rect.w = 64;
         }
 
         SDL_RenderPresent(renderer);
