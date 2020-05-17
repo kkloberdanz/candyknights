@@ -31,6 +31,8 @@
 #include "constants.h"
 #include "cake.h"
 
+#define NUM_ENEMIES 5
+
 int rand_ball_velocity() {
     int random_num = rand() % MAX_VELOCITY;
     int velocity = MAX(random_num, MIN_VELOCITY);
@@ -80,26 +82,36 @@ char game_loop(
         renderer
     );
 
-    struct Entity player = create_knight(renderer);
-    struct Entity enemy = create_knight(renderer);
+    struct Entity player;
+    create_knight(renderer, &player);
     struct Cake cake = cake_create(renderer);
-
-    /* make enemies slightly slower than player */
-    enemy.y_vel = 0.9 * player.y_vel;
-    enemy.x_vel = 0.9 * player.x_vel;
 
     player.dir = LEFT;
     player.state = WALKING;
     player.handicap = 0;
     player.max_handicap = 0;
+    player.team = 0;
     entity_logic(&player, NULL, 0); // setup player position
 
-    struct Entity *entities[2];
+    struct Entity enemies[NUM_ENEMIES];
+    struct Entity *entities[1 + NUM_ENEMIES];
     entities[0] = &player;
-    entities[1] = &enemy;
+
+    for (int i = 0; i < NUM_ENEMIES; i++) {
+        create_knight(renderer, &enemies[i]);
+
+        /* make enemies slightly slower than player */
+        enemies[i].y_vel = 0.9 * player.y_vel;
+        enemies[i].x_vel = 0.9 * player.x_vel;
+        enemies[i].health = 1;
+        enemies[i].max_actions = rand() % enemies[i].max_actions;
+        entity_set_pos(&enemies[i], 0.2*SCREEN_WIDTH + 10*i, 310 + 10*i);
+
+        entities[i+1] = &enemies[i];
+    }
+
     const size_t num_entities = sizeof(entities) / sizeof(struct Entity *);
     entity_set_pos(&player, 0.8*SCREEN_WIDTH, player.rect.y);
-    entity_set_pos(&enemy, 0.2*SCREEN_WIDTH, player.rect.y);
 
     while (game_running()) {
         int start_tick = SDL_GetTicks();
@@ -110,8 +122,10 @@ char game_loop(
 
         entity_logic(&player, entities, num_entities);
 
-        enemy_ai_logic(&player, &enemy);
-        entity_logic(&enemy, entities, num_entities);
+        for (int i = 0; i < NUM_ENEMIES; i++) {
+            enemy_ai_logic(&player, &enemies[i]);
+            entity_logic(&enemies[i], entities, num_entities);
+        }
 
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, background_image, NULL, NULL);
@@ -135,11 +149,14 @@ char game_loop(
             player.texture = cake.textures[0];
             player.rect.h = 64;
             player.rect.w = 64;
-        } else if (enemy.health == 0) {
-            puts("you win!");
-            enemy.texture = cake.textures[0];
-            enemy.rect.h = 64;
-            enemy.rect.w = 64;
+        } else {
+            for (int i = 0; i < NUM_ENEMIES; i++) {
+                if (enemies[i].health == 0) {
+                    enemies[i].texture = cake.textures[0];
+                    enemies[i].rect.h = 64;
+                    enemies[i].rect.w = 64;
+                }
+            }
         }
 
         SDL_RenderPresent(renderer);

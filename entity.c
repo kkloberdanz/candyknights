@@ -84,52 +84,42 @@ void idle_animation(struct Entity *entity) {
     }
 }
 
-struct Entity create_knight(SDL_Renderer *renderer) {
-    struct Entity knight = {
-        .rect = {
-            .x = 300,
-            .y = 400,
-            .w = 128,
-            .h = 128
-        },
-        .hitbox = {
-            .x = 320,
-            .y = 420,
-            .w = 40,
-            .h = 80
-        },
-        .attack_box = {
-            .x = 350,
-            .y = 435,
-            .w = 75,
-            .h = 40
-        },
-        .health = 12,
-        .handicap = 3,
-        .max_handicap = 3,
-        .texture = load_texture("assets/knight.png", renderer),
-        .texture_rect = {
-            .x = 0,
-            .y = 0,
-            .w = 64,
-            .h = 64
-        },
-        .total_frames = 10,
-        .current_frame = 0,
-        .flip = SDL_FLIP_NONE,
-        .center = {
-            .x = 64,
-            .y = 64
-        },
-        .x_vel = 3,
-        .y_vel = 2,
-        .state = IDLE,
-        .buffer = 0,
-        .idle_state = STILL,
-        .actions = 100,
-        .sleep_actions = 0,
-        .max_actions = 100
-    };
+struct Entity *create_knight(SDL_Renderer *renderer, struct Entity *knight) {
+    knight->rect.x = 300;
+    knight->rect.y = 400;
+    knight->rect.w = 128;
+    knight->rect.h = 128;
+
+    knight->hitbox.x = 320;
+    knight->hitbox.y = 420;
+    knight->hitbox.w = 40;
+    knight->hitbox.h = 80;
+    knight->attack_box.x = 350;
+    knight->attack_box.y = 435;
+    knight->attack_box.w = 75;
+    knight->attack_box.h = 40;
+    knight->health = 12;
+    knight->handicap = 3;
+    knight->max_handicap = 3;
+    knight->texture = load_texture("assets/knight.png", renderer);
+    knight->texture_rect.x = 0;
+    knight->texture_rect.y = 0;
+    knight->texture_rect.w = 64;
+    knight->texture_rect.h = 64;
+    knight->total_frames = 10;
+    knight->current_frame = 0;
+    knight->flip = SDL_FLIP_NONE;
+    knight->center.x = 64;
+    knight->center.y = 64;
+    knight->x_vel = 3;
+    knight->y_vel = 2;
+    knight->state = IDLE;
+    knight->buffer = 0;
+    knight->idle_state = STILL;
+    knight->actions = 100;
+    knight->sleep_actions = 0;
+    knight->max_actions = 100;
+    knight->team = 1;
     return knight;
 }
 
@@ -198,6 +188,10 @@ void entity_logic(struct Entity *entity, struct Entity *entities[], size_t num_e
                 for (size_t i = 0; i < num_entities; i++) {
                     if (entities[i] == entity) {
                         /* don't attack yourself */
+                        continue;
+                    }
+                    if (entities[i]->team == entity->team) {
+                        /* don't attack teammates */
                         continue;
                     }
                     if (obj_touching(&entity->attack_box, &entities[i]->hitbox)) {

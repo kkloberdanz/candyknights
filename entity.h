@@ -34,6 +34,7 @@ struct Entity {
     int actions;
     int sleep_actions;
     int max_actions;
+    int team;
 };
 
 void set_frame(struct Entity *entity, enum SpriteFrame frame_num);
@@ -42,7 +43,7 @@ void walk_animation(struct Entity *entity);
 
 void idle_animation(struct Entity *entity);
 
-struct Entity create_knight(SDL_Renderer *renderer);
+struct Entity *create_knight(SDL_Renderer *renderer, struct Entity *knight);
 
 enum GameState handle_player_input(
     struct Entity *player,
