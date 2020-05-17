@@ -222,7 +222,7 @@ void entity_logic(struct Entity *entity, struct Entity *entities[], size_t num_e
                     walk_animation(entity);
                 }
             } else if (entity->dir & UP) {
-                if (entity->rect.y > 310) {
+                if (entity->rect.y > PLAYING_FIELD_HEIGHT) {
                     entity_set_pos(
                         entity,
                         entity->rect.x,

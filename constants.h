@@ -9,6 +9,7 @@ enum Constants {
     MAX_VELOCITY = 20,
     MIN_VELOCITY = 10,
     WINNING_SCORE = 10,
+    PLAYING_FIELD_HEIGHT = 310,
 };
 
 enum GameState {
