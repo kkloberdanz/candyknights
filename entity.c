@@ -96,6 +96,12 @@ struct Entity create_knight(SDL_Renderer *renderer) {
             .w = 40,
             .h = 80
         },
+        .attack_box = {
+            .x = 350,
+            .y = 435,
+            .w = 75,
+            .h = 40
+        },
         .health = 13,
         .texture = load_texture("assets/knight.png", renderer),
         .texture_rect = {
@@ -161,6 +167,8 @@ enum GameState handle_player_input(
 void entity_set_pos(struct Entity *entity, int x, int y) {
     entity->hitbox.x += x - entity->rect.x;
     entity->hitbox.y += y - entity->rect.y;
+    entity->attack_box.x += x - entity->rect.x;
+    entity->attack_box.y += y - entity->rect.y;
     entity->rect.x = x;
     entity->rect.y = y;
 }
@@ -217,6 +225,9 @@ void entity_logic(struct Entity *entity) {
                             entity->hitbox.x = entity->rect.w -
                                 (entity->hitbox.x - entity->rect.x + entity->hitbox.w) +
                                 entity->rect.x;
+                            entity->attack_box.x = entity->rect.w -
+                                (entity->attack_box.x - entity->rect.x + entity->attack_box.w) +
+                                entity->rect.x;
                             break;
 
                         default:
@@ -237,6 +248,9 @@ void entity_logic(struct Entity *entity) {
                             entity->flip = SDL_FLIP_HORIZONTAL;
                             entity->hitbox.x = entity->rect.w -
                                 (entity->hitbox.x - entity->rect.x + entity->hitbox.w) +
+                                entity->rect.x;
+                            entity->attack_box.x = entity->rect.w -
+                                (entity->attack_box.x - entity->rect.x + entity->attack_box.w) +
                                 entity->rect.x;
                             break;
 
@@ -267,6 +281,7 @@ void entity_render(struct Entity *entity, SDL_Renderer *renderer) {
         entity->flip
     );
     SDL_RenderFillRect(renderer, &entity->hitbox);
+    SDL_RenderFillRect(renderer, &entity->attack_box);
 }
 
 static bool obj_touching(SDL_Rect *rect1, SDL_Rect *rect2) {

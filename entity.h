@@ -15,6 +15,7 @@ enum EntityState {
 struct Entity {
     SDL_Rect rect;
     SDL_Rect hitbox;
+    SDL_Rect attack_box;
     SDL_Texture *texture;
     SDL_Rect texture_rect;
     int total_frames;
