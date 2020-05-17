@@ -39,6 +39,9 @@ entity.o: entity.c $(HEADERS)
 controller.o: controller.c $(HEADERS)
 	$(CC) -c controller.c $(CFLAGS)
 
+cake.o: cake.c $(HEADERS)
+	$(CC) -c cake.c $(CFLAGS)
+
 .PHONY: clean
 clean:
 	rm -f candyknights

@@ -29,6 +29,7 @@
 #include "sprite.h"
 #include "textures.h"
 #include "constants.h"
+#include "cake.h"
 
 int rand_ball_velocity() {
     int random_num = rand() % MAX_VELOCITY;
@@ -81,6 +82,7 @@ char game_loop(
 
     struct Entity player = create_knight(renderer);
     struct Entity enemy = create_knight(renderer);
+    struct Cake cake = cake_create(renderer);
 
     /* make enemies slightly slower than player */
     enemy.y_vel = 0.9 * player.y_vel;
@@ -123,6 +125,15 @@ char game_loop(
 
         for (size_t i = 0; i < num_entities; i++) {
             entity_render(entities[i], renderer);
+        }
+
+        cake.state = (12 - player.health);
+        fprintf(stderr, "player health: %d, cake state: %d\n", player.health, cake.state);
+        cake_render(renderer, &cake);
+        if (player.health == 0) {
+            puts("you have died");
+        } else if (enemy.health == 0) {
+            puts("you win!");
         }
 
         SDL_RenderPresent(renderer);

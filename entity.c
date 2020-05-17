@@ -104,7 +104,7 @@ struct Entity create_knight(SDL_Renderer *renderer) {
             .w = 75,
             .h = 40
         },
-        .health = 13,
+        .health = 12,
         .handicap = 3,
         .max_handicap = 3,
         .texture = load_texture("assets/knight.png", renderer),
