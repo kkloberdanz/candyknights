@@ -276,16 +276,6 @@ static bool obj_touching(SDL_Rect *rect1, SDL_Rect *rect2) {
            !(rect2->y >= rect1->y + rect1->h);
 }
 
-static SDL_Rect get_hitbox(SDL_Rect *rect) {
-    SDL_Rect hitbox = {
-        .x = rect->x,
-        .y = rect->y,
-        .h = rect->h - 40,
-        .w = rect->w - 100,
-    };
-    return hitbox;
-}
-
 void enemy_ai_logic(struct Entity *player, struct Entity *enemy) {
     enemy->dir = 0;
 
@@ -299,30 +289,39 @@ void enemy_ai_logic(struct Entity *player, struct Entity *enemy) {
         enemy->actions--;
     }
 
-    if (enemy->rect.y > player->rect.y) {
+    if (enemy->hitbox.y > player->hitbox.y) {
         enemy->dir |= UP;
         puts("moving enemy up");
-    } else if (enemy->rect.y < player->rect.y) {
+    } else if (enemy->hitbox.y < player->hitbox.y) {
         enemy->dir |= DOWN;
         puts("moving enemy down");
     }
 
-    if (enemy->rect.x > player->rect.x) {
+    if (enemy->hitbox.x > player->hitbox.x) {
         enemy->dir |= LEFT;
         puts("moving enemy left");
-    } else if (enemy->rect.x < player->rect.x) {
+    } else if (enemy->hitbox.x < player->hitbox.x) {
         enemy->dir |= RIGHT;
         puts("moving enemy right");
     }
 
-    SDL_Rect player_hb = get_hitbox(&player->rect);
-    SDL_Rect enemy_hb = get_hitbox(&enemy->rect);
-    if (obj_touching(&player_hb, &enemy_hb)) {
+    if (obj_touching(&player->hitbox, &enemy->hitbox)) {
         /* if right on top of player, ATTACK! */
-        if (enemy->actions & 0x111) {
-            enemy->state = ATTACKING;
-        }
+        enemy->state = ATTACKING;
     } else {
         enemy->state = WALKING;
+    }
+
+    printf("enemy state: ");
+    switch (enemy->state) {
+        case ATTACKING:
+            puts("ATTACKING");
+            break;
+        case WALKING:
+            puts("WALKING");
+            break;
+        case IDLE:
+            puts("IDLE");
+            break;
     }
 }
