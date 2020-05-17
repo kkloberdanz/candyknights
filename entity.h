@@ -14,6 +14,7 @@ enum EntityState {
 
 struct Entity {
     SDL_Rect rect;
+    SDL_Rect hitbox;
     SDL_Texture *texture;
     SDL_Rect texture_rect;
     int total_frames;
@@ -50,5 +51,7 @@ void entity_logic(struct Entity *entity);
 void entity_render(struct Entity *entity, SDL_Renderer *renderer);
 
 void enemy_ai_logic(struct Entity *player, struct Entity *enemy);
+
+void entity_set_pos(struct Entity *entity, int x, int y);
 
 #endif /* ENTITY_H */

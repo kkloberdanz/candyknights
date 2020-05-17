@@ -94,8 +94,8 @@ char game_loop(
     to_render[0] = &player;
     to_render[1] = &enemy;
     const size_t num_to_render = sizeof(to_render) / sizeof(struct Entity *);
-    player.rect.x = 0.8 * SCREEN_WIDTH;
-    enemy.rect.x = 0.2 * SCREEN_WIDTH;
+    entity_set_pos(&player, 0.8*SCREEN_WIDTH, player.rect.y);
+    entity_set_pos(&enemy, 0.2*SCREEN_WIDTH, player.rect.y);
 
     while (game_running()) {
         int start_tick = SDL_GetTicks();

@@ -90,6 +90,12 @@ struct Entity create_knight(SDL_Renderer *renderer) {
             .w = 128,
             .h = 128
         },
+        .hitbox = {
+            .x = 320,
+            .y = 420,
+            .w = 40,
+            .h = 80
+        },
         .health = 13,
         .texture = load_texture("assets/knight.png", renderer),
         .texture_rect = {
@@ -152,6 +158,13 @@ enum GameState handle_player_input(
     return PLAY_GAME;
 }
 
+void entity_set_pos(struct Entity *entity, int x, int y) {
+    entity->hitbox.x += x - entity->rect.x;
+    entity->hitbox.y += y - entity->rect.y;
+    entity->rect.x = x;
+    entity->rect.y = y;
+}
+
 void entity_logic(struct Entity *entity) {
     switch (entity->state) {
         case ATTACKING:
@@ -173,26 +186,63 @@ void entity_logic(struct Entity *entity) {
 
             if (entity->dir & DOWN) {
                 if (entity->rect.y < SCREEN_HEIGHT - entity->rect.h) {
-                    entity->rect.y += entity->y_vel;
+                    entity_set_pos(
+                        entity,
+                        entity->rect.x,
+                        entity->rect.y + entity->y_vel
+                    );
                     walk_animation(entity);
                 }
             } else if (entity->dir & UP) {
                 if (entity->rect.y > 310) {
-                    entity->rect.y -= entity->y_vel;
+                    entity_set_pos(
+                        entity,
+                        entity->rect.x,
+                        entity->rect.y - entity->y_vel
+                    );
                     walk_animation(entity);
                 }
             }
 
             if (entity->dir & RIGHT) {
                 if (entity->rect.x < SCREEN_WIDTH - entity->rect.w) {
-                    entity->rect.x += entity->x_vel;
+                    entity_set_pos(
+                        entity,
+                        entity->rect.x + entity->x_vel,
+                        entity->rect.y
+                    );
+                    switch (entity->flip) {
+                        case SDL_FLIP_HORIZONTAL:
+                            entity->flip = SDL_FLIP_NONE;
+                            entity->hitbox.x = entity->rect.w -
+                                (entity->hitbox.x - entity->rect.x + entity->hitbox.w) +
+                                entity->rect.x;
+                            break;
+
+                        default:
+                            break;
+                    }
                     entity->flip = SDL_FLIP_NONE;
                     walk_animation(entity);
                 }
             } else if (entity->dir & LEFT) {
                 if (entity->rect.x > 0) {
-                    entity->rect.x -= entity->x_vel;
-                    entity->flip = SDL_FLIP_HORIZONTAL;
+                    entity_set_pos(
+                        entity,
+                        entity->rect.x - entity->x_vel,
+                        entity->rect.y
+                    );
+                    switch (entity->flip) {
+                        case SDL_FLIP_NONE:
+                            entity->flip = SDL_FLIP_HORIZONTAL;
+                            entity->hitbox.x = entity->rect.w -
+                                (entity->hitbox.x - entity->rect.x + entity->hitbox.w) +
+                                entity->rect.x;
+                            break;
+
+                        default:
+                            break;
+                    }
                     walk_animation(entity);
                 }
             }
@@ -216,6 +266,7 @@ void entity_render(struct Entity *entity, SDL_Renderer *renderer) {
         &entity->center, // center
         entity->flip
     );
+    SDL_RenderFillRect(renderer, &entity->hitbox);
 }
 
 static bool obj_touching(SDL_Rect *rect1, SDL_Rect *rect2) {
