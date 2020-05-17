@@ -88,12 +88,14 @@ char game_loop(
 
     player.dir = LEFT;
     player.state = WALKING;
-    entity_logic(&player); // setup player position
+    player.handicap = 0;
+    player.max_handicap = 0;
+    entity_logic(&player, NULL, 0); // setup player position
 
-    struct Entity *to_render[2];
-    to_render[0] = &player;
-    to_render[1] = &enemy;
-    const size_t num_to_render = sizeof(to_render) / sizeof(struct Entity *);
+    struct Entity *entities[2];
+    entities[0] = &player;
+    entities[1] = &enemy;
+    const size_t num_entities = sizeof(entities) / sizeof(struct Entity *);
     entity_set_pos(&player, 0.8*SCREEN_WIDTH, player.rect.y);
     entity_set_pos(&enemy, 0.2*SCREEN_WIDTH, player.rect.y);
 
@@ -104,23 +106,23 @@ char game_loop(
             goto cleanup;
         }
 
-        entity_logic(&player);
+        entity_logic(&player, entities, num_entities);
 
         enemy_ai_logic(&player, &enemy);
-        entity_logic(&enemy);
+        entity_logic(&enemy, entities, num_entities);
 
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, background_image, NULL, NULL);
 
         qsort(
-            to_render,
-            num_to_render,
+            entities,
+            num_entities,
             sizeof(struct Entity *),
             entity_render_compare
         );
 
-        for (size_t i = 0; i < num_to_render; i++) {
-            entity_render(to_render[i], renderer);
+        for (size_t i = 0; i < num_entities; i++) {
+            entity_render(entities[i], renderer);
         }
 
         SDL_RenderPresent(renderer);

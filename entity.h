@@ -27,6 +27,8 @@ struct Entity {
     enum EntityState state;
     unsigned char buffer;
     unsigned char health;
+    unsigned char handicap;
+    unsigned char max_handicap;
     enum IdleState idle_state;
     enum Direction dir;
     int actions;
@@ -47,7 +49,7 @@ enum GameState handle_player_input(
     SDL_Joystick *joystick
 );
 
-void entity_logic(struct Entity *entity);
+void entity_logic(struct Entity *entity, struct Entity *entities[], size_t nun_entities);
 
 void entity_render(struct Entity *entity, SDL_Renderer *renderer);
 

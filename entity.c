@@ -8,6 +8,8 @@
 #include "controller.h"
 #include "constants.h"
 
+static bool obj_touching(SDL_Rect *rect1, SDL_Rect *rect2);
+
 void set_frame(struct Entity *entity, enum SpriteFrame frame_num) {
     entity->current_frame = frame_num;
     entity->texture_rect.x = entity->current_frame * entity->texture_rect.w;
@@ -103,6 +105,8 @@ struct Entity create_knight(SDL_Renderer *renderer) {
             .h = 40
         },
         .health = 13,
+        .handicap = 3,
+        .max_handicap = 3,
         .texture = load_texture("assets/knight.png", renderer),
         .texture_rect = {
             .x = 0,
@@ -173,7 +177,12 @@ void entity_set_pos(struct Entity *entity, int x, int y) {
     entity->rect.y = y;
 }
 
-void entity_logic(struct Entity *entity) {
+void entity_logic(struct Entity *entity, struct Entity *entities[], size_t num_entities) {
+    printf("current health: %d\n", entity->health);
+    if (entity->health <= 0) {
+        puts("entity is dead");
+        return;
+    }
     switch (entity->state) {
         case ATTACKING:
             if (entity->buffer <= 5) {
@@ -186,6 +195,17 @@ void entity_logic(struct Entity *entity) {
                 set_frame(entity, STANDING);
                 entity->state = IDLE;
                 entity->buffer = 0;
+                for (size_t i = 0; i < num_entities; i++) {
+                    if (entities[i] == entity) {
+                        /* don't attack yourself */
+                        continue;
+                    }
+                    if (obj_touching(&entity->attack_box, &entities[i]->hitbox)) {
+                        if (entities[i]->health > 0) {
+                            entities[i]->health--;
+                        }
+                    }
+                }
             }
             break;
 
@@ -280,8 +300,10 @@ void entity_render(struct Entity *entity, SDL_Renderer *renderer) {
         &entity->center, // center
         entity->flip
     );
+    /*
     SDL_RenderFillRect(renderer, &entity->hitbox);
     SDL_RenderFillRect(renderer, &entity->attack_box);
+    */
 }
 
 static bool obj_touching(SDL_Rect *rect1, SDL_Rect *rect2) {
@@ -320,7 +342,7 @@ void enemy_ai_logic(struct Entity *player, struct Entity *enemy) {
         puts("moving enemy right");
     }
 
-    if (obj_touching(&player->hitbox, &enemy->hitbox)) {
+    if (obj_touching(&player->hitbox, &enemy->attack_box)) {
         /* if right on top of player, ATTACK! */
         enemy->state = ATTACKING;
     } else {
